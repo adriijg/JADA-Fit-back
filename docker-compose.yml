@@ -1,0 +1,10 @@
+services:
+  jadafit-db:
+    image: postgres:16
+    container_name: jadafit-db
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: jadaFit-2025
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
