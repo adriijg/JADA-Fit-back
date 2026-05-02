@@ -1,13 +1,13 @@
 package es.jadafit.jadafit_api.dto;
 
-import jakarta.validation.constraints.Email;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 
 public record LoginDTO(
-        @Email(message = "El formato del email no es válido")
-        @NotBlank(message = "El email es obligatorio")
-        String email,
+        @JsonAlias({"email", "username"})
+        @NotBlank(message = "El email o nombre de usuario es obligatorio")
+        String identifier,
 
-        @NotBlank(message = "La contraseña es obligatoria")
+        @NotBlank(message = "La contrasena es obligatoria")
         String password
 ) {}

@@ -4,6 +4,7 @@ import es.jadafit.jadafit_api.dto.AuthResponseDTO;
 import es.jadafit.jadafit_api.dto.LoginDTO;
 import es.jadafit.jadafit_api.dto.UserRegistrationDTO;
 import es.jadafit.jadafit_api.dto.UserResponseDTO;
+import es.jadafit.jadafit_api.exception.UnauthorizedException;
 import es.jadafit.jadafit_api.model.User;
 import es.jadafit.jadafit_api.security.JwtUtils;
 import es.jadafit.jadafit_api.service.UserService;
@@ -65,7 +66,13 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> me(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        UUID userId;
+
+        try {
+            userId = UUID.fromString(authentication.getName());
+        } catch (IllegalArgumentException ex) {
+            throw new UnauthorizedException("Token invalido");
+        }
 
         User user = userService.getUserById(userId);
 

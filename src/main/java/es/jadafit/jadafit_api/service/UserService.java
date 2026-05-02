@@ -2,11 +2,17 @@ package es.jadafit.jadafit_api.service;
 
 import es.jadafit.jadafit_api.dto.LoginDTO;
 import es.jadafit.jadafit_api.dto.UserRegistrationDTO;
+import es.jadafit.jadafit_api.exception.ConflictException;
+import es.jadafit.jadafit_api.exception.NotFoundException;
+import es.jadafit.jadafit_api.exception.UnauthorizedException;
 import es.jadafit.jadafit_api.model.User;
 import es.jadafit.jadafit_api.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -24,29 +30,36 @@ public class UserService {
     }
 
     public User registerUser(UserRegistrationDTO dto) {
-        if (userRepository.findByEmail(dto.email()).isPresent()) {
-            throw new RuntimeException("El email ya está registrado");
+        String email = normalize(dto.email());
+        String username = normalize(dto.username());
+
+        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
+            throw new ConflictException("El email ya esta registrado");
         }
 
-        if (userRepository.findByUsername(dto.username()).isPresent()) {
-            throw new RuntimeException("El nombre de usuario ya está registrado");
+        if (userRepository.findByUsernameIgnoreCase(username).isPresent()) {
+            throw new ConflictException("El nombre de usuario ya esta registrado");
         }
 
         User user = User.builder()
-                .username(dto.username())
-                .email(dto.email())
+                .username(username)
+                .email(email)
                 .passwordHash(passwordEncoder.encode(dto.password()))
                 .build();
 
-        return userRepository.save(user);
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new ConflictException("El email o nombre de usuario ya esta registrado");
+        }
     }
 
     public User loginUser(LoginDTO loginDto) {
-        User user = userRepository.findByEmail(loginDto.email())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        User user = findByLoginIdentifier(loginDto.identifier())
+                .orElseThrow(() -> new UnauthorizedException("Credenciales incorrectas"));
 
         if (!passwordEncoder.matches(loginDto.password(), user.getPasswordHash())) {
-            throw new RuntimeException("Credenciales incorrectas");
+            throw new UnauthorizedException("Credenciales incorrectas");
         }
 
         return user;
@@ -54,11 +67,25 @@ public class UserService {
 
     public User getUserById(UUID id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
     }
 
     public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return userRepository.findByEmailIgnoreCase(normalize(email))
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+    }
+
+    private String normalize(String value) {
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private Optional<User> findByLoginIdentifier(String identifier) {
+        String normalizedIdentifier = normalize(identifier);
+
+        if (normalizedIdentifier.contains("@")) {
+            return userRepository.findByEmailIgnoreCase(normalizedIdentifier);
+        }
+
+        return userRepository.findByUsernameIgnoreCase(normalizedIdentifier);
     }
 }
