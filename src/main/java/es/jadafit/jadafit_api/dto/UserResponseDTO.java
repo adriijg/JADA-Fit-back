@@ -7,6 +7,7 @@ public record UserResponseDTO(
         UUID id,
         String username,
         String email,
+        Boolean onboardingCompleted,
         LocalDateTime createdAt
 ) {
 }

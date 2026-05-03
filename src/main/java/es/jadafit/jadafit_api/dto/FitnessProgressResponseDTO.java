@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record ProfileProgressResponseDTO(
+public record FitnessProgressResponseDTO(
         UUID id,
         BigDecimal weight,
         BigDecimal bodyFat,

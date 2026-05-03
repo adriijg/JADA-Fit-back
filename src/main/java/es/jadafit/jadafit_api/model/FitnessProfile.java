@@ -9,13 +9,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_profiles")
+@Table(name = "fitness_profiles")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserProfile {
+public class FitnessProfile {
 
     @Id
     @GeneratedValue
@@ -39,9 +39,9 @@ public class UserProfile {
     @Column
     private Gender gender;
 
-    @Builder.Default
+    @Enumerated(EnumType.STRING)
     @Column
-    private String goal = "mantenimiento";
+    private FitnessGoal goal;
 
     @Column(name = "body_fat")
     private BigDecimal bodyFat;

@@ -3,6 +3,7 @@ package es.jadafit.jadafit_api.dto;
 public record AuthResponseDTO(
         String token,
         String username,
-        String email
+        String email,
+        Boolean onboardingCompleted
 ) {
 }

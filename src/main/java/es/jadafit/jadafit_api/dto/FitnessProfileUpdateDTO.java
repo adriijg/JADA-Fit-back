@@ -1,14 +1,14 @@
 package es.jadafit.jadafit_api.dto;
 
+import es.jadafit.jadafit_api.model.FitnessGoal;
 import es.jadafit.jadafit_api.model.Gender;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-public record ProfileUpdateDTO(
+public record FitnessProfileUpdateDTO(
         @DecimalMin(value = "1.0", message = "El peso debe ser mayor que 0")
         BigDecimal weight,
 
@@ -22,8 +22,7 @@ public record ProfileUpdateDTO(
 
         Gender gender,
 
-        @Size(max = 50, message = "El objetivo no puede superar los 50 caracteres")
-        String goal,
+        FitnessGoal goal,
 
         @DecimalMin(value = "0.0", message = "El porcentaje de grasa no puede ser negativo")
         BigDecimal bodyFat,

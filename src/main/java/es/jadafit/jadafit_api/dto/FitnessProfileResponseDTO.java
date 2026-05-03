@@ -1,12 +1,13 @@
 package es.jadafit.jadafit_api.dto;
 
+import es.jadafit.jadafit_api.model.FitnessGoal;
 import es.jadafit.jadafit_api.model.Gender;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record ProfileResponseDTO(
+public record FitnessProfileResponseDTO(
         UUID userId,
         String username,
         String email,
@@ -14,7 +15,7 @@ public record ProfileResponseDTO(
         Integer height,
         Integer age,
         Gender gender,
-        String goal,
+        FitnessGoal goal,
         BigDecimal bodyFat,
         BigDecimal muscleMass,
         LocalDateTime updatedAt

@@ -9,13 +9,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "profile_progress_logs")
+@Table(name = "fitness_progress_logs")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProfileProgressLog {
+public class FitnessProgressLog {
 
     @Id
     @GeneratedValue

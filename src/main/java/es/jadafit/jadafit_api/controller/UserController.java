@@ -41,6 +41,7 @@ public class UserController {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
+                user.getOnboardingCompleted(),
                 user.getCreatedAt()
         );
 
@@ -58,7 +59,8 @@ public class UserController {
         AuthResponseDTO response = new AuthResponseDTO(
                 token,
                 user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.getOnboardingCompleted()
         );
 
         return ResponseEntity.ok(response);
@@ -66,13 +68,7 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> me(Authentication authentication) {
-        UUID userId;
-
-        try {
-            userId = UUID.fromString(authentication.getName());
-        } catch (IllegalArgumentException ex) {
-            throw new UnauthorizedException("Token invalido");
-        }
+        UUID userId = getUserIdFromAuthentication(authentication);
 
         User user = userService.getUserById(userId);
 
@@ -80,9 +76,22 @@ public class UserController {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
+                user.getOnboardingCompleted(),
                 user.getCreatedAt()
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    private UUID getUserIdFromAuthentication(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new UnauthorizedException("No autorizado");
+        }
+
+        try {
+            return UUID.fromString(authentication.getName());
+        } catch (IllegalArgumentException ex) {
+            throw new UnauthorizedException("Token invalido");
+        }
     }
 }
