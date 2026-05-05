@@ -88,4 +88,10 @@ public class UserService {
 
         return userRepository.findByUsernameIgnoreCase(normalizedIdentifier);
     }
+
+    public User updatePrivacySettings(UUID userId, Boolean shareProgress) {
+        User user = getUserById(userId);
+        user.setShareProgress(shareProgress);
+        return userRepository.save(user);
+    }
 }

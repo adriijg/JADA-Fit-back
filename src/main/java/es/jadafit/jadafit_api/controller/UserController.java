@@ -42,7 +42,8 @@ public class UserController {
                 user.getUsername(),
                 user.getEmail(),
                 user.getOnboardingCompleted(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getShareProgress()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -77,7 +78,28 @@ public class UserController {
                 user.getUsername(),
                 user.getEmail(),
                 user.getOnboardingCompleted(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getShareProgress()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/me/privacy")
+    public ResponseEntity<UserResponseDTO> updatePrivacy(
+            Authentication authentication,
+            @Valid @RequestBody es.jadafit.jadafit_api.dto.PrivacySettingsUpdateDTO dto
+    ) {
+        UUID userId = getUserIdFromAuthentication(authentication);
+        User user = userService.updatePrivacySettings(userId, dto.shareProgress());
+        
+        UserResponseDTO response = new UserResponseDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getOnboardingCompleted(),
+                user.getCreatedAt(),
+                user.getShareProgress()
         );
 
         return ResponseEntity.ok(response);

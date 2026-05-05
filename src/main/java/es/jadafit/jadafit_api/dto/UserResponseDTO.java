@@ -8,6 +8,7 @@ public record UserResponseDTO(
         String username,
         String email,
         Boolean onboardingCompleted,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Boolean shareProgress
 ) {
 }

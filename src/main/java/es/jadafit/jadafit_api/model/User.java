@@ -37,4 +37,8 @@ public class User {
     @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Builder.Default
+    @Column(name = "share_progress", nullable = false, columnDefinition = "boolean default true")
+    private Boolean shareProgress = true;
 }
