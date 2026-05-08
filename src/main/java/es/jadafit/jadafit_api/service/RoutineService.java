@@ -17,7 +17,19 @@ public class RoutineService {
         return routineRepository.findAll();
     }
 
+    public Routine getRoutineById(Long id) {
+        return routineRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Rutina no encontrada con id: " + id));
+    }
+
     public Routine saveRoutine(Routine routine) {
         return routineRepository.save(routine);
+    }
+
+    public void deleteRoutine(Long id) {
+        if (!routineRepository.existsById(id)) {
+            throw new RuntimeException("Rutina no encontrada con id: " + id);
+        }
+        routineRepository.deleteById(id);
     }
 }
