@@ -23,6 +23,7 @@ public class RoutineController {
 
     @GetMapping
     public ResponseEntity<List<Routine>> getAll() {
+        System.out.println("DEBUG: Recibida peticion GET en /api/routines");
         return ResponseEntity.ok(routineService.getAllRoutines());
     }
 

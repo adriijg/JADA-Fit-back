@@ -41,6 +41,8 @@ public class UserController {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
+                user.getBio(),
+                user.getProfilePictureUrl(),
                 user.getOnboardingCompleted(),
                 user.getCreatedAt(),
                 user.getShareProgress()
@@ -77,6 +79,8 @@ public class UserController {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
+                user.getBio(),
+                user.getProfilePictureUrl(),
                 user.getOnboardingCompleted(),
                 user.getCreatedAt(),
                 user.getShareProgress()
@@ -97,6 +101,30 @@ public class UserController {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
+                user.getBio(),
+                user.getProfilePictureUrl(),
+                user.getOnboardingCompleted(),
+                user.getCreatedAt(),
+                user.getShareProgress()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/me/profile")
+    public ResponseEntity<UserResponseDTO> updateProfile(
+            Authentication authentication,
+            @Valid @RequestBody es.jadafit.jadafit_api.dto.ProfileUpdateDTO dto
+    ) {
+        UUID userId = getUserIdFromAuthentication(authentication);
+        User user = userService.updateProfile(userId, dto);
+        
+        UserResponseDTO response = new UserResponseDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getBio(),
+                user.getProfilePictureUrl(),
                 user.getOnboardingCompleted(),
                 user.getCreatedAt(),
                 user.getShareProgress()

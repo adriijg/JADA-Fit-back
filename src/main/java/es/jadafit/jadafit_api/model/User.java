@@ -34,6 +34,12 @@ public class User {
     @Column(name = "onboarding_completed", nullable = false)
     private Boolean onboardingCompleted = false;
 
+    @Column(name = "bio", length = 500)
+    private String bio;
+
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
     @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

@@ -27,7 +27,7 @@ public class Routine {
     private String description;
     private String targetGoal;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.EAGER)
     @JoinColumn(name = "routine_id")
     private List<Exercise> exercises;
 }

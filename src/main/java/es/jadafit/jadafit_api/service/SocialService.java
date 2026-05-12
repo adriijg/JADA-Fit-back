@@ -64,20 +64,20 @@ public class SocialService {
     public List<UserSummaryDTO> getFollowers(UUID userId) {
         User user = userService.getUserById(userId);
         return userFollowRepository.findByFollowing(user).stream()
-                .map(follow -> new UserSummaryDTO(follow.getFollower().getId(), follow.getFollower().getUsername()))
+                .map(follow -> new UserSummaryDTO(follow.getFollower().getId(), follow.getFollower().getUsername(), follow.getFollower().getProfilePictureUrl()))
                 .collect(Collectors.toList());
     }
 
     public List<UserSummaryDTO> getFollowing(UUID userId) {
         User user = userService.getUserById(userId);
         return userFollowRepository.findByFollower(user).stream()
-                .map(follow -> new UserSummaryDTO(follow.getFollowing().getId(), follow.getFollowing().getUsername()))
+                .map(follow -> new UserSummaryDTO(follow.getFollowing().getId(), follow.getFollowing().getUsername(), follow.getFollowing().getProfilePictureUrl()))
                 .collect(Collectors.toList());
     }
 
     public List<UserSummaryDTO> searchUsers(String query) {
         return userRepository.findByUsernameContainingIgnoreCase(query).stream()
-                .map(user -> new UserSummaryDTO(user.getId(), user.getUsername()))
+                .map(user -> new UserSummaryDTO(user.getId(), user.getUsername(), user.getProfilePictureUrl()))
                 .collect(Collectors.toList());
     }
 
@@ -96,6 +96,8 @@ public class SocialService {
         return new UserProfileDTO(
                 targetUser.getId(),
                 targetUser.getUsername(),
+                targetUser.getBio(),
+                targetUser.getProfilePictureUrl(),
                 followersCount,
                 followingCount,
                 isFollowing,
