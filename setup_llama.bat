@@ -1,10 +1,9 @@
 @echo off
-chcp 65001 >nul
-title JADA Fit - IA Local (CPU - compatible con todo)
+title JADA Fit - IA Local
 cls
 
 echo ============================================
-echo   JADA Fit - Configuracion de IA Local
+echo   JADA Fit - IA Local
 echo ============================================
 echo.
 echo Este script descarga e inicia un modelo de IA
@@ -16,88 +15,72 @@ set "LLAMA_DIR=%SCRIPT_DIR%llama"
 set "SERVER_EXE=%LLAMA_DIR%\llama-server.exe"
 set "MODEL_DIR=%LLAMA_DIR%\models"
 
-:: ---------- llama-server ----------
+REM ---------- llama-server ----------
 if not exist "%SERVER_EXE%" (
-    echo [1/3] Descargando llama-server...
+    echo.
+    echo [Paso 1/3] Descargando instalacion de ~30MB...
     if not exist "%LLAMA_DIR%" mkdir "%LLAMA_DIR%"
 
-    echo    Descargando version compatible con cualquier GPU/CPU (~30MB)...
-    set "ZIP_URL=https://github.com/ggml-org/llama.cpp/releases/download/b4628/llama-b4628-bin-win-avx2-x64.zip"
+    echo    Descargando...
 
-    powershell -Command "& {
-        $ProgressPreference = 'SilentlyContinue'
-        $zip = '%LLAMA_DIR%\llama.zip'
-        Write-Host '   Descargando...'
-        Invoke-WebRequest -Uri $env:ZIP_URL -OutFile $zip
-        Expand-Archive -Path $zip -DestinationPath '%LLAMA_DIR%' -Force
-        Remove-Item $zip
-    }"
+    powershell -Command "$ProgressPreference='SilentlyContinue'; $zip='%LLAMA_DIR%\llama.zip'; Write-Host '   Descargando...'; Invoke-WebRequest -Uri 'https://github.com/ggml-org/llama.cpp/releases/download/b4628/llama-b4628-bin-win-avx2-x64.zip' -OutFile $zip; Expand-Archive -Path $zip -DestinationPath '%LLAMA_DIR%' -Force; Remove-Item $zip"
 
     for /r "%LLAMA_DIR%" %%f in (llama-server.exe) do (
         if not exist "%SERVER_EXE%" copy "%%f" "%SERVER_EXE%" >nul
     )
 
     if exist "%SERVER_EXE%" (
-        echo    ✓ llama-server descargado
+        echo    [OK] llama-server descargado
     ) else (
-        echo    ✗ Error al descargar llama-server
-        echo    Descargalo manualmente de:
+        echo    [ERROR] No se pudo descargar llama-server
+        echo    Descarga manual desde:
         echo    https://github.com/ggml-org/llama.cpp/releases
         pause
         exit /b 1
     )
 ) else (
-    echo [1/3] ✓ llama-server ya existe
+    echo.
+    echo [Paso 1/3] [OK] llama-server ya existe
 )
 
-:: ---------- Modelo ----------
+REM ---------- Modelo ----------
 if not exist "%MODEL_DIR%" mkdir "%MODEL_DIR%"
 
 set "MODEL_FILE=%MODEL_DIR%\qwen2.5-1.5b-instruct-q4_k_m.gguf"
 
 if not exist "%MODEL_FILE%" (
-    echo [2/3] Descargando modelo (~1GB)...
-    echo    Modelo: Qwen2.5-1.5B-Instruct (recomendado)
+    echo.
+    echo [Paso 2/3] Descargando modelo de ~1GB...
+    echo    Modelo: Qwen2.5-1.5B-Instruct
     echo    Esto puede tardar varios minutos...
 
-    powershell -Command "& {
-        $ProgressPreference = 'SilentlyContinue'
-        $url = 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf'
-        Write-Host '   Descargando... (puede tardar)'
-        Invoke-WebRequest -Uri $url -OutFile '%MODEL_FILE%'
-    }"
+    powershell -Command "$ProgressPreference='SilentlyContinue'; $url='https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf'; Write-Host '   Descargando...'; Invoke-WebRequest -Uri $url -OutFile '%MODEL_FILE%'"
 
     if exist "%MODEL_FILE%" (
-        echo    ✓ Modelo descargado
+        echo    [OK] Modelo descargado
     ) else (
-        echo    ✗ Error al descargar el modelo
-        echo    Prueba a descargarlo manualmente de:
+        echo    [ERROR] No se pudo descargar el modelo
+        echo    Descarga manual desde:
         echo    https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF
         pause
         exit /b 1
     )
 ) else (
-    echo [2/3] ✓ Modelo ya existe
+    echo.
+    echo [Paso 2/3] [OK] Modelo ya existe
 )
 
-:: ---------- Iniciar servidor ----------
+REM ---------- Iniciar servidor ----------
 echo.
-echo [3/3] Iniciando servidor en puerto 8090...
+echo [Paso 3/3] Iniciando servidor en puerto 8090...
 echo.
 echo   Una vez iniciado, abre JADA Fit y usa
 echo   el asistente IA con normalidad.
 echo.
-echo   Para detenerlo: cierra esta ventana.
-echo.
-echo ============================================
+echo   Para detenerlo, cierra esta ventana.
 echo.
 
-"%SERVER_EXE%" ^
-    -m "%MODEL_FILE%" ^
-    -c 8192 ^
-    -np 1 ^
-    --port 8090 ^
-    --jinja
+"%SERVER_EXE%" -m "%MODEL_FILE%" -c 8192 -np 1 --port 8090 --jinja
 
 echo.
 echo El servidor se ha detenido.
