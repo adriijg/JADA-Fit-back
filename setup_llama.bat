@@ -22,13 +22,20 @@ if not exist "%SERVER_EXE%" (
     if not exist "%LLAMA_DIR%" mkdir "%LLAMA_DIR%"
 
     echo    Descargando version compatible con cualquier GPU/CPU (~30MB)...
+    set "ZIP_URL=https://github.com/ggml-org/llama.cpp/releases/download/b4628/llama-b4628-bin-win-avx2-x64.zip"
+
     powershell -Command "& {
         $ProgressPreference = 'SilentlyContinue'
         $zip = '%LLAMA_DIR%\llama.zip'
-        Invoke-WebRequest -Uri 'https://github.com/ggml-org/llama.cpp/releases/download/b4628/llama-b4628-bin-win-avx2-x64.zip' -OutFile $zip
+        Write-Host '   Descargando...'
+        Invoke-WebRequest -Uri $env:ZIP_URL -OutFile $zip
         Expand-Archive -Path $zip -DestinationPath '%LLAMA_DIR%' -Force
         Remove-Item $zip
     }"
+
+    for /r "%LLAMA_DIR%" %%f in (llama-server.exe) do (
+        if not exist "%SERVER_EXE%" copy "%%f" "%SERVER_EXE%" >nul
+    )
 
     if exist "%SERVER_EXE%" (
         echo    ✓ llama-server descargado
