@@ -94,4 +94,15 @@ public class UserService {
         user.setShareProgress(shareProgress);
         return userRepository.save(user);
     }
+
+    public User updateProfile(UUID userId, es.jadafit.jadafit_api.dto.ProfileUpdateDTO dto) {
+        User user = getUserById(userId);
+        if (dto.bio() != null) {
+            user.setBio(dto.bio());
+        }
+        if (dto.profilePictureUrl() != null) {
+            user.setProfilePictureUrl(dto.profilePictureUrl());
+        }
+        return userRepository.save(user);
+    }
 }
