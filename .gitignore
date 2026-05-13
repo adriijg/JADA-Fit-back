@@ -33,3 +33,6 @@ build/
 .vscode/
 
 application-local.properties
+
+# IA Local (llama.cpp + modelos descargados por setup_llama_*.bat)
+llama/
