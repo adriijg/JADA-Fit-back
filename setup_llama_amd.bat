@@ -12,7 +12,7 @@ echo.
 
 set "SCRIPT_DIR=%~dp0"
 set "LLAMA_DIR=%SCRIPT_DIR%llama"
-set "SERVER_EXE=%LLAMA_DIR%\llama-server.exe"
+set "SERVER_EXE=%LLAMA_DIR%\llama-server-vulkan.exe"
 set "MODEL_DIR=%LLAMA_DIR%\models"
 
 REM ---------- llama-server (Vulkan) ----------
