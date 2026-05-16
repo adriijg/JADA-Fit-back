@@ -6,8 +6,11 @@ import es.jadafit.jadafit_api.dto.NutritionMealCreateDTO;
 import es.jadafit.jadafit_api.dto.NutritionMealResponseDTO;
 import es.jadafit.jadafit_api.exception.NotFoundException;
 import es.jadafit.jadafit_api.model.NutritionMealLog;
+import es.jadafit.jadafit_api.model.Recipe;
+import es.jadafit.jadafit_api.model.RecipeIngredient;
 import es.jadafit.jadafit_api.model.User;
 import es.jadafit.jadafit_api.repository.NutritionMealRepository;
+import es.jadafit.jadafit_api.repository.RecipeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +29,18 @@ public class NutritionService {
     private final UserService userService;
     private final NutritionMealRepository nutritionMealRepository;
     private final NutritionGoalService nutritionGoalService;
+    private final RecipeRepository recipeRepository;
 
     public NutritionService(
             UserService userService,
             NutritionMealRepository nutritionMealRepository,
-            NutritionGoalService nutritionGoalService
+            NutritionGoalService nutritionGoalService,
+            RecipeRepository recipeRepository
     ) {
         this.userService = userService;
         this.nutritionMealRepository = nutritionMealRepository;
         this.nutritionGoalService = nutritionGoalService;
+        this.recipeRepository = recipeRepository;
     }
 
     @Transactional
@@ -106,6 +112,52 @@ public class NutritionService {
                 .orElseThrow(() -> new NotFoundException("Registro de comida no encontrado"));
 
         nutritionMealRepository.delete(mealLog);
+    }
+
+    @Transactional
+    public List<NutritionMealResponseDTO> createMealsFromRecipe(
+            UUID userId,
+            es.jadafit.jadafit_api.dto.RecipeToMealDTO dto
+    ) {
+        User user = userService.getUserById(userId);
+
+        Recipe recipe = recipeRepository.findByIdAndUserId(dto.recipeId(), userId)
+                .orElseThrow(() -> new NotFoundException("Receta no encontrada"));
+
+        LocalDateTime loggedAt = dto.loggedAt() != null
+                ? dto.loggedAt()
+                : LocalDateTime.now();
+
+        List<NutritionMealLog> meals = recipe.getIngredients().stream()
+                .map(ingredient -> {
+                    BigDecimal calories = calculateForQuantity(
+                            ingredient.getCaloriesPer100g(), ingredient.getQuantityGrams());
+                    BigDecimal protein = calculateForQuantity(
+                            ingredient.getProteinPer100g(), ingredient.getQuantityGrams());
+                    BigDecimal carbs = calculateForQuantity(
+                            ingredient.getCarbsPer100g(), ingredient.getQuantityGrams());
+                    BigDecimal fats = calculateForQuantity(
+                            ingredient.getFatsPer100g(), ingredient.getQuantityGrams());
+
+                    return NutritionMealLog.builder()
+                            .user(user)
+                            .foodName(ingredient.getFoodName())
+                            .mealType(dto.mealType())
+                            .quantityGrams(ingredient.getQuantityGrams())
+                            .calories(calories)
+                            .protein(protein)
+                            .carbs(carbs)
+                            .fats(fats)
+                            .loggedAt(loggedAt)
+                            .build();
+                })
+                .toList();
+
+        List<NutritionMealLog> savedMeals = nutritionMealRepository.saveAll(meals);
+
+        return savedMeals.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     private BigDecimal calculateForQuantity(BigDecimal valuePer100g, BigDecimal quantityGrams) {

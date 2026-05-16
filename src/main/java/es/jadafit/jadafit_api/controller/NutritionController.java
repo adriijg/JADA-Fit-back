@@ -3,6 +3,7 @@ package es.jadafit.jadafit_api.controller;
 import es.jadafit.jadafit_api.dto.NutritionDaySummaryResponseDTO;
 import es.jadafit.jadafit_api.dto.NutritionMealCreateDTO;
 import es.jadafit.jadafit_api.dto.NutritionMealResponseDTO;
+import es.jadafit.jadafit_api.dto.RecipeToMealDTO;
 import es.jadafit.jadafit_api.exception.UnauthorizedException;
 import es.jadafit.jadafit_api.service.NutritionService;
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -61,6 +63,18 @@ public class NutritionController {
         nutritionService.deleteMeal(userId, mealId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/meals/from-recipe")
+    public ResponseEntity<List<NutritionMealResponseDTO>> createMealsFromRecipe(
+            Authentication authentication,
+            @Valid @RequestBody RecipeToMealDTO dto
+    ) {
+        UUID userId = getUserIdFromAuthentication(authentication);
+
+        List<NutritionMealResponseDTO> response = nutritionService.createMealsFromRecipe(userId, dto);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     private UUID getUserIdFromAuthentication(Authentication authentication) {

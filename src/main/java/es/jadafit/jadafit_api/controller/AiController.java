@@ -25,6 +25,6 @@ public class AiController {
             Authentication authentication
     ) {
         String userId = (String) authentication.getPrincipal();
-        return ResponseEntity.ok(aiService.chat(userId, request.getMessage()));
+        return ResponseEntity.ok(aiService.chat(userId, request.getMessage(), request.getHistory()));
     }
 }

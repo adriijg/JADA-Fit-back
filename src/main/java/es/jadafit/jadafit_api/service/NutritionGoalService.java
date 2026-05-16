@@ -152,6 +152,16 @@ public class NutritionGoalService {
                 proteinPerKg = BigDecimal.valueOf(1.8);
                 fatsPerKg = BigDecimal.valueOf(0.9);
             }
+            case MEJORAR_RENDIMIENTO -> {
+                caloriesTarget = maintenanceCalories.multiply(BigDecimal.valueOf(1.05));
+                proteinPerKg = BigDecimal.valueOf(1.8);
+                fatsPerKg = BigDecimal.valueOf(0.8);
+            }
+            case RECOMPOSICION_CORPORAL -> {
+                caloriesTarget = maintenanceCalories;
+                proteinPerKg = BigDecimal.valueOf(2.3);
+                fatsPerKg = BigDecimal.valueOf(0.8);
+            }
             default -> {
                 caloriesTarget = maintenanceCalories;
                 proteinPerKg = BigDecimal.valueOf(1.8);

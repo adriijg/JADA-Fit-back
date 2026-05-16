@@ -11,6 +11,7 @@ import es.jadafit.jadafit_api.repository.CatalogFoodRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -216,6 +217,9 @@ public class CatalogFoodService {
 
         return merged.values()
                 .stream()
+                .sorted(Comparator.comparingInt(food ->
+                        food.source() == FoodSource.USER ? 0 : 1
+                ))
                 .limit(30)
                 .toList();
     }
