@@ -16,13 +16,16 @@ public class FitnessProfileService {
 
     private final UserService userService;
     private final FitnessProfileRepository fitnessProfileRepository;
+    private final NutritionGoalService nutritionGoalService;
 
     public FitnessProfileService(
             UserService userService,
-            FitnessProfileRepository fitnessProfileRepository
+            FitnessProfileRepository fitnessProfileRepository,
+            NutritionGoalService nutritionGoalService
     ) {
         this.userService = userService;
         this.fitnessProfileRepository = fitnessProfileRepository;
+        this.nutritionGoalService = nutritionGoalService;
     }
 
     @Transactional(readOnly = true)
@@ -56,6 +59,10 @@ public class FitnessProfileService {
         profile.setUpdatedAt(LocalDateTime.now());
 
         FitnessProfile savedProfile = fitnessProfileRepository.save(profile);
+
+        try {
+            nutritionGoalService.recalculateMyNutritionGoal(userId);
+        } catch (Exception ignored) {}
 
         return toFitnessProfileResponse(user, savedProfile);
     }
