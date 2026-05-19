@@ -32,6 +32,9 @@ public class NutritionMealLog {
     @Column(name = "food_name", nullable = false)
     private String foodName;
 
+    @Column(name = "food_source")
+    private String foodSource;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "meal_type", nullable = false)
     private MealType mealType;

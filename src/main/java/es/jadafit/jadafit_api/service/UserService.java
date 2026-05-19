@@ -1,7 +1,10 @@
 package es.jadafit.jadafit_api.service;
 
+import es.jadafit.jadafit_api.dto.ForgotPasswordRequestDTO;
 import es.jadafit.jadafit_api.dto.LoginDTO;
+import es.jadafit.jadafit_api.dto.ResetPasswordRequestDTO;
 import es.jadafit.jadafit_api.dto.UserRegistrationDTO;
+import es.jadafit.jadafit_api.exception.BadRequestException;
 import es.jadafit.jadafit_api.exception.ConflictException;
 import es.jadafit.jadafit_api.exception.NotFoundException;
 import es.jadafit.jadafit_api.exception.UnauthorizedException;
@@ -11,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,13 +24,16 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            EmailService emailService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     public User registerUser(UserRegistrationDTO dto) {
@@ -104,5 +111,35 @@ public class UserService {
             user.setProfilePictureUrl(dto.profilePictureUrl());
         }
         return userRepository.save(user);
+    }
+
+    public void forgotPassword(ForgotPasswordRequestDTO dto) {
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(normalize(dto.email()));
+        if (userOpt.isEmpty()) {
+            return;
+        }
+
+        User user = userOpt.get();
+        String token = UUID.randomUUID().toString();
+        user.setPasswordResetToken(token);
+        user.setPasswordResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        emailService.sendPasswordResetToken(user.getEmail(), token);
+    }
+
+    public void resetPassword(ResetPasswordRequestDTO dto) {
+        User user = userRepository.findByPasswordResetToken(dto.token())
+                .orElseThrow(() -> new BadRequestException("Token invalido"));
+
+        if (user.getPasswordResetTokenExpiry() == null
+                || user.getPasswordResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("El token ha expirado");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(dto.newPassword()));
+        user.setPasswordResetToken(null);
+        user.setPasswordResetTokenExpiry(null);
+        userRepository.save(user);
     }
 }

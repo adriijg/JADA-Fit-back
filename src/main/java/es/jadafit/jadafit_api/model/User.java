@@ -47,4 +47,10 @@ public class User {
     @Builder.Default
     @Column(name = "share_progress", nullable = false, columnDefinition = "boolean default true")
     private Boolean shareProgress = true;
+
+    @Column(name = "password_reset_token", length = 36)
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_token_expiry")
+    private LocalDateTime passwordResetTokenExpiry;
 }

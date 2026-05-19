@@ -1,9 +1,12 @@
 package es.jadafit.jadafit_api.controller;
 
 import es.jadafit.jadafit_api.dto.AuthResponseDTO;
+import es.jadafit.jadafit_api.dto.ForgotPasswordRequestDTO;
 import es.jadafit.jadafit_api.dto.LoginDTO;
 import es.jadafit.jadafit_api.dto.UserRegistrationDTO;
 import es.jadafit.jadafit_api.dto.UserResponseDTO;
+import es.jadafit.jadafit_api.dto.ResetPasswordRequestDTO;
+import es.jadafit.jadafit_api.dto.GenericMessageDTO;
 import es.jadafit.jadafit_api.exception.UnauthorizedException;
 import es.jadafit.jadafit_api.model.User;
 import es.jadafit.jadafit_api.security.JwtUtils;
@@ -32,20 +35,18 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> register(
+    public ResponseEntity<AuthResponseDTO> register(
             @Valid @RequestBody UserRegistrationDTO dto
     ) {
         User user = userService.registerUser(dto);
 
-        UserResponseDTO response = new UserResponseDTO(
-                user.getId(),
+        String token = jwtUtils.generateToken(user.getId().toString());
+
+        AuthResponseDTO response = new AuthResponseDTO(
+                token,
                 user.getUsername(),
                 user.getEmail(),
-                user.getBio(),
-                user.getProfilePictureUrl(),
-                user.getOnboardingCompleted(),
-                user.getCreatedAt(),
-                user.getShareProgress()
+                user.getOnboardingCompleted()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -131,6 +132,22 @@ public class UserController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<GenericMessageDTO> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequestDTO dto
+    ) {
+        userService.forgotPassword(dto);
+        return ResponseEntity.ok(new GenericMessageDTO("Si el email existe, recibiras un correo con las instrucciones"));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<GenericMessageDTO> resetPassword(
+            @Valid @RequestBody ResetPasswordRequestDTO dto
+    ) {
+        userService.resetPassword(dto);
+        return ResponseEntity.ok(new GenericMessageDTO("Contrasena actualizada correctamente"));
     }
 
     private UUID getUserIdFromAuthentication(Authentication authentication) {

@@ -15,6 +15,8 @@ public record NutritionMealCreateDTO(
         @NotBlank(message = "El nombre del alimento es obligatorio")
         String foodName,
 
+        String foodSource,
+
         @NotNull(message = "El tipo de comida es obligatorio")
         MealType mealType,
 

@@ -3,6 +3,7 @@ package es.jadafit.jadafit_api.controller;
 import es.jadafit.jadafit_api.dto.NutritionDaySummaryResponseDTO;
 import es.jadafit.jadafit_api.dto.NutritionMealCreateDTO;
 import es.jadafit.jadafit_api.dto.NutritionMealResponseDTO;
+import es.jadafit.jadafit_api.dto.RecentFoodResponseDTO;
 import es.jadafit.jadafit_api.dto.RecipeToMealDTO;
 import es.jadafit.jadafit_api.exception.UnauthorizedException;
 import es.jadafit.jadafit_api.service.NutritionService;
@@ -63,6 +64,17 @@ public class NutritionController {
         nutritionService.deleteMeal(userId, mealId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/meals/recent")
+    public ResponseEntity<List<RecentFoodResponseDTO>> getRecentFoods(
+            Authentication authentication
+    ) {
+        UUID userId = getUserIdFromAuthentication(authentication);
+
+        List<RecentFoodResponseDTO> response = nutritionService.getRecentFoods(userId);
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/meals/from-recipe")

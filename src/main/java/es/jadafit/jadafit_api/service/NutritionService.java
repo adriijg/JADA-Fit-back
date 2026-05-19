@@ -4,6 +4,7 @@ import es.jadafit.jadafit_api.dto.NutritionDaySummaryResponseDTO;
 import es.jadafit.jadafit_api.dto.NutritionGoalResponseDTO;
 import es.jadafit.jadafit_api.dto.NutritionMealCreateDTO;
 import es.jadafit.jadafit_api.dto.NutritionMealResponseDTO;
+import es.jadafit.jadafit_api.dto.RecentFoodResponseDTO;
 import es.jadafit.jadafit_api.exception.NotFoundException;
 import es.jadafit.jadafit_api.model.NutritionMealLog;
 import es.jadafit.jadafit_api.model.Recipe;
@@ -55,6 +56,7 @@ public class NutritionService {
                 .user(user)
                 .externalFoodId(normalizeText(dto.externalFoodId()))
                 .foodName(normalizeText(dto.foodName()))
+                .foodSource(dto.foodSource())
                 .mealType(dto.mealType())
                 .quantityGrams(dto.quantityGrams())
                 .calories(calculateForQuantity(dto.caloriesPer100g(), dto.quantityGrams()))
@@ -112,6 +114,40 @@ public class NutritionService {
                 .orElseThrow(() -> new NotFoundException("Registro de comida no encontrado"));
 
         nutritionMealRepository.delete(mealLog);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecentFoodResponseDTO> getRecentFoods(UUID userId) {
+        List<NutritionMealLog> logs = nutritionMealRepository.findRecentDistinctFoods(userId);
+
+        List<NutritionMealLog> topLogs = logs.size() > 8 ? logs.subList(0, 8) : logs;
+
+        return topLogs.stream().map(log -> {
+            BigDecimal qty = log.getQuantityGrams();
+            BigDecimal caloriesPer100g = qty.compareTo(BigDecimal.ZERO) > 0
+                    ? log.getCalories().multiply(ONE_HUNDRED).divide(qty, 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+            BigDecimal proteinPer100g = qty.compareTo(BigDecimal.ZERO) > 0
+                    ? log.getProtein().multiply(ONE_HUNDRED).divide(qty, 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+            BigDecimal carbsPer100g = qty.compareTo(BigDecimal.ZERO) > 0
+                    ? log.getCarbs().multiply(ONE_HUNDRED).divide(qty, 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+            BigDecimal fatsPer100g = qty.compareTo(BigDecimal.ZERO) > 0
+                    ? log.getFats().multiply(ONE_HUNDRED).divide(qty, 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+
+            return new RecentFoodResponseDTO(
+                    log.getId(),
+                    log.getFoodName(),
+                    caloriesPer100g,
+                    proteinPer100g,
+                    carbsPer100g,
+                    fatsPer100g,
+                    log.getLoggedAt(),
+                    log.getFoodSource()
+            );
+        }).toList();
     }
 
     @Transactional

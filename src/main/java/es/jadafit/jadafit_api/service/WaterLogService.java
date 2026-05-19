@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -35,11 +36,27 @@ public class WaterLogService {
                 ? dto.loggedAt()
                 : LocalDateTime.now();
 
-        WaterLog log = WaterLog.builder()
-                .user(user)
-                .amountMl(dto.amountMl())
-                .loggedAt(loggedAt)
-                .build();
+        LocalDate logDate = loggedAt.toLocalDate();
+        LocalDateTime dayStart = logDate.atStartOfDay();
+        LocalDateTime dayEnd = logDate.plusDays(1).atStartOfDay();
+
+        Optional<WaterLog> existing = waterLogRepository
+                .findByUserIdAndLoggedAtBetweenOrderByLoggedAtAsc(userId, dayStart, dayEnd)
+                .stream()
+                .findFirst();
+
+        WaterLog log;
+        if (existing.isPresent()) {
+            log = existing.get();
+            log.setAmountMl(dto.amountMl());
+            log.setLoggedAt(loggedAt);
+        } else {
+            log = WaterLog.builder()
+                    .user(user)
+                    .amountMl(dto.amountMl())
+                    .loggedAt(loggedAt)
+                    .build();
+        }
 
         WaterLog saved = waterLogRepository.save(log);
 
