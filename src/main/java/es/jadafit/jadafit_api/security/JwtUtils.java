@@ -23,12 +23,13 @@ public class JwtUtils {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(String subject) {
+    public String generateToken(String subject, String sessionId) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .subject(subject)
+                .claim("sid", sessionId)
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(key)
@@ -42,6 +43,15 @@ public class JwtUtils {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+    }
+
+    public String getSessionIdFromToken(String token) {
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("sid", String.class);
     }
 
     public boolean validateToken(String token) {

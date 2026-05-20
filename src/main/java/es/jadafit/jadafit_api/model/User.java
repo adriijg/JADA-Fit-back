@@ -53,4 +53,7 @@ public class User {
 
     @Column(name = "password_reset_token_expiry")
     private LocalDateTime passwordResetTokenExpiry;
+
+    @Column(name = "session_id", length = 36)
+    private String sessionId;
 }

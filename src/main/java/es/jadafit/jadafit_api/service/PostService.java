@@ -42,6 +42,7 @@ public class PostService {
         return mapToDTO(post);
     }
 
+    @Transactional(readOnly = true)
     public List<PostDTO> getFeed(UUID currentUserId) {
         User currentUser = userService.getUserById(currentUserId);
         
@@ -59,6 +60,7 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<PostDTO> getExplore() {
         return postRepository.findByAuthor_ShareProgressTrueOrderByCreatedAtDesc()
                 .stream()
@@ -66,6 +68,7 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<PostDTO> getUserPosts(UUID userId) {
         User user = userService.getUserById(userId);
         return postRepository.findByAuthorOrderByCreatedAtDesc(user)

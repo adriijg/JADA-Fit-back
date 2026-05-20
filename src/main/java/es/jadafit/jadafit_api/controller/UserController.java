@@ -39,8 +39,9 @@ public class UserController {
             @Valid @RequestBody UserRegistrationDTO dto
     ) {
         User user = userService.registerUser(dto);
+        String sessionId = userService.refreshSessionId(user.getId());
 
-        String token = jwtUtils.generateToken(user.getId().toString());
+        String token = jwtUtils.generateToken(user.getId().toString(), sessionId);
 
         AuthResponseDTO response = new AuthResponseDTO(
                 token,
@@ -57,8 +58,9 @@ public class UserController {
             @Valid @RequestBody LoginDTO loginDto
     ) {
         User user = userService.loginUser(loginDto);
+        String sessionId = userService.refreshSessionId(user.getId());
 
-        String token = jwtUtils.generateToken(user.getId().toString());
+        String token = jwtUtils.generateToken(user.getId().toString(), sessionId);
 
         AuthResponseDTO response = new AuthResponseDTO(
                 token,

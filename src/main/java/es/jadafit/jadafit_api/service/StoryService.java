@@ -43,6 +43,7 @@ public class StoryService {
         return mapToDTO(story);
     }
 
+    @Transactional(readOnly = true)
     public List<StoryDTO> getFeedStories(UUID currentUserId) {
         User currentUser = userService.getUserById(currentUserId);
         

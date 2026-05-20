@@ -1,5 +1,7 @@
 package es.jadafit.jadafit_api.security;
 
+import es.jadafit.jadafit_api.model.User;
+import es.jadafit.jadafit_api.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,14 +13,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
+    private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtUtils jwtUtils) {
+    public JwtAuthenticationFilter(JwtUtils jwtUtils, UserRepository userRepository) {
         this.jwtUtils = jwtUtils;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -40,19 +46,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if (jwtUtils.validateToken(token)) {
                     String userId = jwtUtils.getSubjectFromToken(token);
+                    String sessionId = jwtUtils.getSessionIdFromToken(token);
 
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    userId,
-                                    null,
-                                    Collections.emptyList()
-                            );
+                    Optional<User> userOpt = userRepository.findById(UUID.fromString(userId));
+                    if (userOpt.isPresent()
+                            && sessionId != null
+                            && sessionId.equals(userOpt.get().getSessionId())) {
 
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        userId,
+                                        null,
+                                        Collections.emptyList()
+                                );
+
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 }
             }
         } catch (Exception e) {
-            // No hacemos nada, permitimos que siga la cadena de filtros
             System.err.println("Error en JwtAuthenticationFilter: " + e.getMessage());
         }
 

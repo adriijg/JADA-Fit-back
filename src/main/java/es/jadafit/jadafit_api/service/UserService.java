@@ -102,6 +102,14 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public String refreshSessionId(UUID userId) {
+        User user = getUserById(userId);
+        String sessionId = UUID.randomUUID().toString();
+        user.setSessionId(sessionId);
+        userRepository.save(user);
+        return sessionId;
+    }
+
     public User updateProfile(UUID userId, es.jadafit.jadafit_api.dto.ProfileUpdateDTO dto) {
         User user = getUserById(userId);
         if (dto.bio() != null) {
@@ -140,6 +148,7 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(dto.newPassword()));
         user.setPasswordResetToken(null);
         user.setPasswordResetTokenExpiry(null);
+        user.setSessionId(UUID.randomUUID().toString());
         userRepository.save(user);
     }
 }
