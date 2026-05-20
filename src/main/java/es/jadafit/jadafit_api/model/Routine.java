@@ -1,5 +1,6 @@
 package es.jadafit.jadafit_api.model;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -30,6 +31,11 @@ public class Routine {
     private String name;
     private String description;
     private String targetGoal;
+
+    @Builder.Default
+    private Boolean isCompleted = false;
+
+    private LocalDateTime completedAt;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

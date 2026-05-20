@@ -25,4 +25,7 @@ public class Exercise {
     private int sets;
     private int reps;
     private int durationSeconds;
+
+    @Builder.Default
+    private Boolean isCompleted = false;
 }

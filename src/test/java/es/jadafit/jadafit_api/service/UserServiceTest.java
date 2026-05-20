@@ -5,6 +5,7 @@ import es.jadafit.jadafit_api.dto.UserRegistrationDTO;
 import es.jadafit.jadafit_api.exception.ConflictException;
 import es.jadafit.jadafit_api.exception.UnauthorizedException;
 import es.jadafit.jadafit_api.model.User;
+import es.jadafit.jadafit_api.service.EmailService;
 import es.jadafit.jadafit_api.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -23,7 +24,8 @@ class UserServiceTest {
 
     private final UserRepository userRepository = mock(UserRepository.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
-    private final UserService userService = new UserService(userRepository, passwordEncoder);
+    private final EmailService emailService = mock(EmailService.class);
+    private final UserService userService = new UserService(userRepository, passwordEncoder, emailService);
 
     @Test
     void registerUserNormalizesEmailAndUsername() {

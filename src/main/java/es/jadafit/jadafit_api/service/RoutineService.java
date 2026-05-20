@@ -1,12 +1,15 @@
 package es.jadafit.jadafit_api.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import es.jadafit.jadafit_api.exception.NotFoundException;
 import es.jadafit.jadafit_api.exception.UnauthorizedException;
+import es.jadafit.jadafit_api.model.Exercise;
 import es.jadafit.jadafit_api.model.Routine;
 import es.jadafit.jadafit_api.model.User;
 import es.jadafit.jadafit_api.repository.RoutineRepository;
@@ -42,5 +45,55 @@ public class RoutineService {
         }
 
         routineRepository.deleteById(id);
+    }
+
+    @Transactional
+    public Routine completeRoutine(Long id, UUID userId) {
+        Routine routine = routineRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Rutina no encontrada"));
+
+        if (!routine.getUser().getId().equals(userId)) {
+            throw new UnauthorizedException("No tienes permiso para modificar esta rutina");
+        }
+
+        routine.setIsCompleted(true);
+        routine.setCompletedAt(LocalDateTime.now());
+
+        if (routine.getExercises() != null) {
+            for (Exercise exercise : routine.getExercises()) {
+                exercise.setIsCompleted(true);
+            }
+        }
+
+        return routineRepository.save(routine);
+    }
+
+    @Transactional
+    public Routine completeExercise(Long routineId, Long exerciseId, UUID userId) {
+        Routine routine = routineRepository.findById(routineId)
+                .orElseThrow(() -> new NotFoundException("Rutina no encontrada"));
+
+        if (!routine.getUser().getId().equals(userId)) {
+            throw new UnauthorizedException("No tienes permiso para modificar esta rutina");
+        }
+
+        if (routine.getExercises() != null) {
+            for (Exercise exercise : routine.getExercises()) {
+                if (exercise.getId().equals(exerciseId)) {
+                    exercise.setIsCompleted(true);
+                    break;
+                }
+            }
+        }
+
+        boolean allCompleted = routine.getExercises() != null
+                && routine.getExercises().stream().allMatch(Exercise::getIsCompleted);
+
+        if (allCompleted) {
+            routine.setIsCompleted(true);
+            routine.setCompletedAt(LocalDateTime.now());
+        }
+
+        return routineRepository.save(routine);
     }
 }

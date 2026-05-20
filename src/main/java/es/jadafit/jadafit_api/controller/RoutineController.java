@@ -48,6 +48,21 @@ public class RoutineController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<Routine> completeRoutine(@PathVariable Long id, Authentication authentication) {
+        UUID userId = getUserIdFromAuthentication(authentication);
+        return ResponseEntity.ok(routineService.completeRoutine(id, userId));
+    }
+
+    @PostMapping("/{id}/exercises/{exerciseId}/complete")
+    public ResponseEntity<Routine> completeExercise(
+            @PathVariable Long id,
+            @PathVariable Long exerciseId,
+            Authentication authentication) {
+        UUID userId = getUserIdFromAuthentication(authentication);
+        return ResponseEntity.ok(routineService.completeExercise(id, exerciseId, userId));
+    }
+
     private UUID getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new UnauthorizedException("No autorizado");

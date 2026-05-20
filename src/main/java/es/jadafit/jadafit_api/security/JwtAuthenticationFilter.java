@@ -49,23 +49,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String sessionId = jwtUtils.getSessionIdFromToken(token);
 
                     Optional<User> userOpt = userRepository.findById(UUID.fromString(userId));
-                    if (userOpt.isPresent()
-                            && sessionId != null
-                            && sessionId.equals(userOpt.get().getSessionId())) {
+                    if (userOpt.isPresent()) {
+                        String dbSessionId = userOpt.get().getSessionId();
 
-                        UsernamePasswordAuthenticationToken authentication =
-                                new UsernamePasswordAuthenticationToken(
-                                        userId,
-                                        null,
-                                        Collections.emptyList()
-                                );
+                        if (sessionId != null && sessionId.equals(dbSessionId)) {
+                            UsernamePasswordAuthenticationToken authentication =
+                                    new UsernamePasswordAuthenticationToken(
+                                            userId,
+                                            null,
+                                            Collections.emptyList()
+                                    );
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        } else {
+                            System.err.println("[JWT] SessionId mismatch for user " + userId
+                                    + ": token_sid=" + sessionId
+                                    + ", db_sid=" + dbSessionId);
 
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                            if (dbSessionId == null) {
+                                System.err.println("[JWT] DB sessionId is null, accepting token anyway");
+                                UsernamePasswordAuthenticationToken authentication =
+                                        new UsernamePasswordAuthenticationToken(
+                                                userId,
+                                                null,
+                                                Collections.emptyList()
+                                        );
+                                SecurityContextHolder.getContext().setAuthentication(authentication);
+                            }
+                        }
+                    } else {
+                        System.err.println("[JWT] User not found: " + userId);
                     }
+                } else {
+                    System.err.println("[JWT] Token validation failed");
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error en JwtAuthenticationFilter: " + e.getMessage());
+            System.err.println("[JWT] Error: " + e.getMessage());
+            e.printStackTrace();
         }
 
         filterChain.doFilter(request, response);
