@@ -6,6 +6,8 @@ import es.jadafit.jadafit_api.dto.UserSummaryDTO;
 import es.jadafit.jadafit_api.model.Post;
 import es.jadafit.jadafit_api.model.User;
 import es.jadafit.jadafit_api.model.UserFollow;
+import es.jadafit.jadafit_api.repository.PostCommentRepository;
+import es.jadafit.jadafit_api.repository.PostLikeRepository;
 import es.jadafit.jadafit_api.repository.PostRepository;
 import es.jadafit.jadafit_api.repository.UserFollowRepository;
 import org.springframework.stereotype.Service;
@@ -21,11 +23,21 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserService userService;
     private final UserFollowRepository userFollowRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final PostCommentRepository postCommentRepository;
 
-    public PostService(PostRepository postRepository, UserService userService, UserFollowRepository userFollowRepository) {
+    public PostService(
+            PostRepository postRepository,
+            UserService userService,
+            UserFollowRepository userFollowRepository,
+            PostLikeRepository postLikeRepository,
+            PostCommentRepository postCommentRepository
+    ) {
         this.postRepository = postRepository;
         this.userService = userService;
         this.userFollowRepository = userFollowRepository;
+        this.postLikeRepository = postLikeRepository;
+        this.postCommentRepository = postCommentRepository;
     }
 
     @Transactional
@@ -39,24 +51,24 @@ public class PostService {
                 .build();
 
         post = postRepository.save(post);
-        return mapToDTO(post);
+        return mapToDTO(post, authorId);
     }
 
     @Transactional(readOnly = true)
     public List<PostDTO> getFeed(UUID currentUserId) {
         User currentUser = userService.getUserById(currentUserId);
-        
+
         List<User> followedUsers = userFollowRepository.findByFollower(currentUser)
                 .stream()
                 .map(UserFollow::getFollowing)
                 .collect(Collectors.toList());
-        
-        // Add current user to see their own posts in the feed (optional, but typical)
+
+        // Include own posts in the feed
         followedUsers.add(currentUser);
 
         return postRepository.findByAuthorInOrderByCreatedAtDesc(followedUsers)
                 .stream()
-                .map(this::mapToDTO)
+                .map(p -> mapToDTO(p, currentUserId))
                 .collect(Collectors.toList());
     }
 
@@ -64,7 +76,7 @@ public class PostService {
     public List<PostDTO> getExplore() {
         return postRepository.findByAuthor_ShareProgressTrueOrderByCreatedAtDesc()
                 .stream()
-                .map(this::mapToDTO)
+                .map(p -> mapToDTO(p, null))
                 .collect(Collectors.toList());
     }
 
@@ -73,23 +85,37 @@ public class PostService {
         User user = userService.getUserById(userId);
         return postRepository.findByAuthorOrderByCreatedAtDesc(user)
                 .stream()
-                .map(this::mapToDTO)
+                .map(p -> mapToDTO(p, userId))
                 .collect(Collectors.toList());
     }
 
-    private PostDTO mapToDTO(Post post) {
+    private PostDTO mapToDTO(Post post, UUID viewerUserId) {
         UserSummaryDTO authorDTO = new UserSummaryDTO(
                 post.getAuthor().getId(),
                 post.getAuthor().getUsername(),
                 post.getAuthor().getProfilePictureUrl()
         );
 
+        long likesCount = postLikeRepository.countByPost(post);
+        long commentsCount = postCommentRepository.countByPost(post);
+        boolean likedByMe = false;
+
+        if (viewerUserId != null) {
+            try {
+                User viewer = userService.getUserById(viewerUserId);
+                likedByMe = postLikeRepository.existsByPostAndUser(post, viewer);
+            } catch (Exception ignored) {}
+        }
+
         return new PostDTO(
                 post.getId(),
                 authorDTO,
                 post.getImageUrl(),
                 post.getCaption(),
-                post.getCreatedAt()
+                post.getCreatedAt(),
+                likesCount,
+                commentsCount,
+                likedByMe
         );
     }
 }

@@ -8,6 +8,9 @@ public record PostDTO(
         UserSummaryDTO author,
         String imageUrl,
         String caption,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        long likesCount,
+        long commentsCount,
+        boolean likedByMe
 ) {
 }
