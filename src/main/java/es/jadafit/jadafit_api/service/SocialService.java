@@ -75,8 +75,9 @@ public class SocialService {
                 .collect(Collectors.toList());
     }
 
-    public List<UserSummaryDTO> searchUsers(String query) {
+    public List<UserSummaryDTO> searchUsers(String query, UUID currentUserId) {
         return userRepository.findByUsernameContainingIgnoreCase(query).stream()
+                .filter(user -> !user.getId().equals(currentUserId))
                 .map(user -> new UserSummaryDTO(user.getId(), user.getUsername(), user.getProfilePictureUrl()))
                 .collect(Collectors.toList());
     }

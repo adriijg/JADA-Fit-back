@@ -52,8 +52,12 @@ public class SocialController {
     }
 
     @GetMapping("/users/search")
-    public ResponseEntity<List<UserSummaryDTO>> searchUsers(@RequestParam String q) {
-        return ResponseEntity.ok(socialService.searchUsers(q));
+    public ResponseEntity<List<UserSummaryDTO>> searchUsers(
+            Authentication authentication,
+            @RequestParam String q
+    ) {
+        UUID currentUserId = getUserIdFromAuthentication(authentication);
+        return ResponseEntity.ok(socialService.searchUsers(q, currentUserId));
     }
 
     @GetMapping("/profile/{userId}")
