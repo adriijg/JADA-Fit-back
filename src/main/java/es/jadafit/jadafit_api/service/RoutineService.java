@@ -69,18 +69,18 @@ public class RoutineService {
     }
 
     @Transactional
-    public Routine completeExercise(Long routineId, Long exerciseId, UUID userId) {
+    public Routine completeExercise(Long routineId, Long exerciseId, boolean completed, UUID userId) {
         Routine routine = routineRepository.findById(routineId)
                 .orElseThrow(() -> new NotFoundException("Rutina no encontrada"));
 
-        if (!routine.getUser().getId().equals(userId)) {
+        if (routine.getUser() == null || !routine.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("No tienes permiso para modificar esta rutina");
         }
 
         if (routine.getExercises() != null) {
             for (Exercise exercise : routine.getExercises()) {
                 if (exercise.getId().equals(exerciseId)) {
-                    exercise.setIsCompleted(true);
+                    exercise.setIsCompleted(completed);
                     break;
                 }
             }
@@ -92,6 +92,9 @@ public class RoutineService {
         if (allCompleted) {
             routine.setIsCompleted(true);
             routine.setCompletedAt(LocalDateTime.now());
+        } else {
+            routine.setIsCompleted(false);
+            routine.setCompletedAt(null);
         }
 
         return routineRepository.save(routine);

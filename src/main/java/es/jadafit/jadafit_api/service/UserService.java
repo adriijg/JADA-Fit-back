@@ -9,12 +9,15 @@ import es.jadafit.jadafit_api.exception.ConflictException;
 import es.jadafit.jadafit_api.exception.NotFoundException;
 import es.jadafit.jadafit_api.exception.UnauthorizedException;
 import es.jadafit.jadafit_api.model.User;
+import es.jadafit.jadafit_api.model.UserSession;
 import es.jadafit.jadafit_api.repository.UserRepository;
+import es.jadafit.jadafit_api.repository.UserSessionRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,16 +25,21 @@ import java.util.UUID;
 @Service
 public class UserService {
 
+    private static final int MAX_SESSIONS_PER_USER = 10;
+
     private final UserRepository userRepository;
+    private final UserSessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
     public UserService(
             UserRepository userRepository,
+            UserSessionRepository sessionRepository,
             PasswordEncoder passwordEncoder,
             EmailService emailService
     ) {
         this.userRepository = userRepository;
+        this.sessionRepository = sessionRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
     }
@@ -102,12 +110,60 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public String refreshSessionId(UUID userId) {
-        User user = getUserById(userId);
+    public String createSession(UUID userId) {
+        return createSession(userId, null);
+    }
+
+    public String createSession(UUID userId, String deviceInfo) {
+        getUserById(userId);
+
+        long activeSessions = sessionRepository.countByUserIdAndIsActiveTrue(userId);
+        if (activeSessions >= MAX_SESSIONS_PER_USER) {
+            List<UserSession> oldest = sessionRepository.findByUserIdAndIsActiveTrue(userId);
+            oldest.sort((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()));
+            oldest.get(0).setIsActive(false);
+            sessionRepository.save(oldest.get(0));
+        }
+
         String sessionId = UUID.randomUUID().toString();
-        user.setSessionId(sessionId);
-        userRepository.save(user);
+        UserSession session = UserSession.builder()
+                .userId(userId)
+                .sessionId(sessionId)
+                .deviceInfo(deviceInfo)
+                .createdAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusDays(30))
+                .isActive(true)
+                .build();
+        sessionRepository.save(session);
         return sessionId;
+    }
+
+    public boolean isValidSession(String userId, String sessionId) {
+        if (sessionId == null) return false;
+        Optional<UserSession> session = sessionRepository.findBySessionIdAndIsActiveTrue(sessionId);
+        if (session.isEmpty()) return false;
+        if (!session.get().getUserId().toString().equals(userId)) return false;
+        if (session.get().getExpiresAt().isBefore(LocalDateTime.now())) {
+            session.get().setIsActive(false);
+            sessionRepository.save(session.get());
+            return false;
+        }
+        return true;
+    }
+
+    public void revokeSession(String sessionId) {
+        sessionRepository.findBySessionIdAndIsActiveTrue(sessionId).ifPresent(session -> {
+            session.setIsActive(false);
+            sessionRepository.save(session);
+        });
+    }
+
+    public void revokeAllSessions(UUID userId) {
+        List<UserSession> active = sessionRepository.findByUserIdAndIsActiveTrue(userId);
+        for (UserSession s : active) {
+            s.setIsActive(false);
+        }
+        sessionRepository.saveAll(active);
     }
 
     public User updateProfile(UUID userId, es.jadafit.jadafit_api.dto.ProfileUpdateDTO dto) {
@@ -148,7 +204,7 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(dto.newPassword()));
         user.setPasswordResetToken(null);
         user.setPasswordResetTokenExpiry(null);
-        user.setSessionId(UUID.randomUUID().toString());
         userRepository.save(user);
+        revokeAllSessions(user.getId());
     }
 }

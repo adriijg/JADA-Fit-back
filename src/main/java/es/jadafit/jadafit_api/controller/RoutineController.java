@@ -60,7 +60,16 @@ public class RoutineController {
             @PathVariable Long exerciseId,
             Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(routineService.completeExercise(id, exerciseId, userId));
+        return ResponseEntity.ok(routineService.completeExercise(id, exerciseId, true, userId));
+    }
+
+    @DeleteMapping("/{id}/exercises/{exerciseId}/complete")
+    public ResponseEntity<Routine> uncompleteExercise(
+            @PathVariable Long id,
+            @PathVariable Long exerciseId,
+            Authentication authentication) {
+        UUID userId = getUserIdFromAuthentication(authentication);
+        return ResponseEntity.ok(routineService.completeExercise(id, exerciseId, false, userId));
     }
 
     private UUID getUserIdFromAuthentication(Authentication authentication) {

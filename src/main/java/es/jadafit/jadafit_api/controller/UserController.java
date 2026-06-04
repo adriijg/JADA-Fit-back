@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -39,7 +40,7 @@ public class UserController {
             @Valid @RequestBody UserRegistrationDTO dto
     ) {
         User user = userService.registerUser(dto);
-        String sessionId = userService.refreshSessionId(user.getId());
+        String sessionId = userService.createSession(user.getId());
 
         String token = jwtUtils.generateToken(user.getId().toString(), sessionId);
 
@@ -58,7 +59,7 @@ public class UserController {
             @Valid @RequestBody LoginDTO loginDto
     ) {
         User user = userService.loginUser(loginDto);
-        String sessionId = userService.refreshSessionId(user.getId());
+        String sessionId = userService.createSession(user.getId());
 
         String token = jwtUtils.generateToken(user.getId().toString(), sessionId);
 
@@ -70,6 +71,16 @@ public class UserController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<GenericMessageDTO> logout(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.ok(new GenericMessageDTO("Sesion cerrada"));
+        }
+        UUID userId = getUserIdFromAuthentication(authentication);
+        userService.revokeAllSessions(userId);
+        return ResponseEntity.ok(new GenericMessageDTO("Sesion cerrada correctamente"));
     }
 
     @GetMapping("/me")
