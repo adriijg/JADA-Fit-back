@@ -4,6 +4,8 @@
 
 JADA FIT será una aplicación fitness modular, organizada por secciones claras y separando responsabilidades.
 
+Documentación técnica adicional en [`docs/`](docs/).
+
 La idea principal es evitar que una pantalla acumule demasiada información. Cada sección debe cumplir una función concreta:
 
 - Home: resumen general del estado del usuario.
