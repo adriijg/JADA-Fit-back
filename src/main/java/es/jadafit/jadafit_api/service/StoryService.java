@@ -43,6 +43,18 @@ public class StoryService {
         return mapToDTO(story);
     }
 
+    @Transactional
+    public void deleteStory(UUID storyId, UUID userId) {
+        Story story = storyRepository.findById(storyId)
+                .orElseThrow(() -> new RuntimeException("Historia no encontrada"));
+
+        if (!story.getAuthor().getId().equals(userId)) {
+            throw new RuntimeException("No puedes eliminar una historia que no te pertenece");
+        }
+
+        storyRepository.delete(story);
+    }
+
     @Transactional(readOnly = true)
     public List<StoryDTO> getFeedStories(UUID currentUserId) {
         User currentUser = userService.getUserById(currentUserId);

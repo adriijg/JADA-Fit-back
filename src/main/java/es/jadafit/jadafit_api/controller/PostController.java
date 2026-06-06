@@ -48,6 +48,16 @@ public class PostController {
         return ResponseEntity.ok(postService.getUserPosts(userId));
     }
 
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<Void> deletePost(
+            Authentication authentication,
+            @PathVariable UUID postId
+    ) {
+        UUID currentUserId = getUserIdFromAuthentication(authentication);
+        postService.deletePost(postId, currentUserId);
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new UnauthorizedException("No autorizado");

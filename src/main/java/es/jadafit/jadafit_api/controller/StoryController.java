@@ -38,6 +38,16 @@ public class StoryController {
         return ResponseEntity.ok(storyService.getFeedStories(currentUserId));
     }
 
+    @DeleteMapping("/{storyId}")
+    public ResponseEntity<Void> deleteStory(
+            Authentication authentication,
+            @PathVariable UUID storyId
+    ) {
+        UUID currentUserId = getUserIdFromAuthentication(authentication);
+        storyService.deleteStory(storyId, currentUserId);
+        return ResponseEntity.noContent().build();
+    }
+
     private UUID getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new UnauthorizedException("No autorizado");

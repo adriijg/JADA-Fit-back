@@ -89,6 +89,20 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void deletePost(UUID postId, UUID userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post no encontrado"));
+
+        if (!post.getAuthor().getId().equals(userId)) {
+            throw new RuntimeException("No puedes eliminar un post que no te pertenece");
+        }
+
+        postLikeRepository.deleteAll(postLikeRepository.findByPost(post));
+        postCommentRepository.deleteAll(postCommentRepository.findByPostOrderByCreatedAtAsc(post));
+        postRepository.delete(post);
+    }
+
     private PostDTO mapToDTO(Post post, UUID viewerUserId) {
         UserSummaryDTO authorDTO = new UserSummaryDTO(
                 post.getAuthor().getId(),

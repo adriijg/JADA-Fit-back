@@ -5,6 +5,7 @@ import es.jadafit.jadafit_api.model.PostLike;
 import es.jadafit.jadafit_api.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,4 +16,6 @@ public interface PostLikeRepository extends JpaRepository<PostLike, UUID> {
     Optional<PostLike> findByPostAndUser(Post post, User user);
 
     long countByPost(Post post);
+
+    List<PostLike> findByPost(Post post);
 }
