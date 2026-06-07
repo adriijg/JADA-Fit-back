@@ -31,17 +31,20 @@ public class UserService {
     private final UserSessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final FileUploadService fileUploadService;
 
     public UserService(
             UserRepository userRepository,
             UserSessionRepository sessionRepository,
             PasswordEncoder passwordEncoder,
-            EmailService emailService
+            EmailService emailService,
+            FileUploadService fileUploadService
     ) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.fileUploadService = fileUploadService;
     }
 
     public User registerUser(UserRegistrationDTO dto) {
@@ -172,6 +175,7 @@ public class UserService {
             user.setBio(dto.bio());
         }
         if (dto.profilePictureUrl() != null) {
+            fileUploadService.deleteImage(user.getProfilePictureUrl());
             user.setProfilePictureUrl(dto.profilePictureUrl());
         }
         return userRepository.save(user);

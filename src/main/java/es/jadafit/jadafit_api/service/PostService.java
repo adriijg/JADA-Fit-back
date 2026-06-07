@@ -25,19 +25,22 @@ public class PostService {
     private final UserFollowRepository userFollowRepository;
     private final PostLikeRepository postLikeRepository;
     private final PostCommentRepository postCommentRepository;
+    private final FileUploadService fileUploadService;
 
     public PostService(
             PostRepository postRepository,
             UserService userService,
             UserFollowRepository userFollowRepository,
             PostLikeRepository postLikeRepository,
-            PostCommentRepository postCommentRepository
+            PostCommentRepository postCommentRepository,
+            FileUploadService fileUploadService
     ) {
         this.postRepository = postRepository;
         this.userService = userService;
         this.userFollowRepository = userFollowRepository;
         this.postLikeRepository = postLikeRepository;
         this.postCommentRepository = postCommentRepository;
+        this.fileUploadService = fileUploadService;
     }
 
     @Transactional
@@ -100,6 +103,7 @@ public class PostService {
 
         postLikeRepository.deleteAll(postLikeRepository.findByPost(post));
         postCommentRepository.deleteAll(postCommentRepository.findByPostOrderByCreatedAtAsc(post));
+        fileUploadService.deleteImage(post.getImageUrl());
         postRepository.delete(post);
     }
 

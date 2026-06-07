@@ -46,4 +46,14 @@ public class FileUploadService {
 
         return "/api/uploads/" + filename;
     }
+
+    public void deleteImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) return;
+
+        String filename = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+        try {
+            Files.deleteIfExists(uploadDir.resolve(filename));
+        } catch (IOException ignored) {
+        }
+    }
 }

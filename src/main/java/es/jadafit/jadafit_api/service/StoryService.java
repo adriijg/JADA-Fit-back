@@ -22,11 +22,13 @@ public class StoryService {
     private final StoryRepository storyRepository;
     private final UserService userService;
     private final UserFollowRepository userFollowRepository;
+    private final FileUploadService fileUploadService;
 
-    public StoryService(StoryRepository storyRepository, UserService userService, UserFollowRepository userFollowRepository) {
+    public StoryService(StoryRepository storyRepository, UserService userService, UserFollowRepository userFollowRepository, FileUploadService fileUploadService) {
         this.storyRepository = storyRepository;
         this.userService = userService;
         this.userFollowRepository = userFollowRepository;
+        this.fileUploadService = fileUploadService;
     }
 
     @Transactional
@@ -52,6 +54,7 @@ public class StoryService {
             throw new RuntimeException("No puedes eliminar una historia que no te pertenece");
         }
 
+        fileUploadService.deleteImage(story.getImageUrl());
         storyRepository.delete(story);
     }
 
