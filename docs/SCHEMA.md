@@ -1,330 +1,91 @@
 # Esquema de Base de Datos — JADA-Fit
 
-## Leyenda de Relaciones
+## Leyenda
 
-```
-┌──────────────┐     ──→  ManyToOne / OneToOne (FK)
-│    users     │     ──→  OneToMany (inverso)
-│  (entidad)   │
-└──────────────┘
-```
+| Símbolo | Significado |
+|---------|-------------|
+| `||--o{` | One (FK owner) a Many (inverse) |
+| `||--||` | One a One |
+| `}o--o{` | Many a Many (no existe aquí) |
 
 ---
 
-## 1. Diagrama General (vista centrada en User)
+## 1. Diagrama General
 
 ```mermaid
 erDiagram
-    users ||--o{ posts : "author_id → FK"
-    users ||--o{ post_likes : "user_id → FK"
-    users ||--o{ post_comments : "author_id → FK"
-    users ||--o{ challenges : "challenger_id → FK"
-    users ||--o{ challenges : "challenged_id → FK"
-    users ||--o{ user_follows : "follower_id → FK"
-    users ||--o{ user_follows : "following_id → FK"
-    users ||--o{ routine : "user_id → FK"
-    users ||--o{ stories : "author_id → FK"
-    users ||--o{ nutrition_meal_logs : "user_id → FK"
-    users ||--o{ water_logs : "user_id → FK"
-    users ||--o{ recipes : "user_id → FK"
-    users ||--o{ nutrition_goals : "user_id → FK"
-    users ||--o{ fitness_profiles : "user_id → FK"
-    users ||--o{ fitness_progress_logs : "user_id → FK"
-    users ||--o{ user_exercise_records : "user_id → FK"
-    users ||--o{ user_sessions : "user_id → FK"
-    users ||--o{ catalog_foods : "owner_user_id → FK"
-
-    posts ||--o{ post_likes : "post_id → FK"
-    posts ||--o{ post_comments : "post_id → FK"
-    routine ||--o{ exercise : "routine_id → FK"
-    recipes ||--o{ recipe_ingredients : "recipe_id → FK"
+    users  ||--o{ posts : "author_id"
+    users  ||--o{ post_likes : "user_id"
+    users  ||--o{ post_comments : "author_id"
+    users  ||--o{ challenges : "challenger_id"
+    users  ||--o{ challenges : "challenged_id"
+    users  ||--o{ user_follows : "follower_id"
+    users  ||--o{ user_follows : "following_id"
+    users  ||--o{ routine : "user_id"
+    users  ||--o{ stories : "author_id"
+    users  ||--o{ nutrition_meal_logs : "user_id"
+    users  ||--o{ water_logs : "user_id"
+    users  ||--o{ recipes : "user_id"
+    users  ||--o{ nutrition_goals : "user_id"
+    users  ||--o{ fitness_profiles : "user_id"
+    users  ||--o{ fitness_progress_logs : "user_id"
+    users  ||--o{ user_exercise_records : "user_id"
+    users  ||--o{ user_sessions : "user_id"
+    users  ||--o{ catalog_foods : "owner_user_id"
+    posts  ||--o{ post_likes : "post_id"
+    posts  ||--o{ post_comments : "post_id"
+    routine ||--o{ exercise : "routine_id"
+    recipes ||--o{ recipe_ingredients : "recipe_id"
 ```
 
 ---
 
 ## 2. Diagramas por dominio
 
-### 2.1 Social (Posts, Likes, Comments, Stories, Follows, Challenges)
+### 2.1 Social
 
 ```mermaid
 erDiagram
-    users {
-        uuid id PK
-        varchar username UK
-        varchar email UK
-        varchar password_hash
-        boolean onboarding_completed
-        varchar bio
-        varchar profile_picture_url
-        timestamp created_at
-        boolean share_progress
-        varchar password_reset_token
-        timestamp password_reset_token_expiry
-        bigint version
-    }
-
-    posts {
-        uuid id PK
-        uuid author_id FK
-        varchar image_url
-        text caption
-        timestamp created_at
-        bigint version
-    }
-
-    post_likes {
-        uuid id PK
-        uuid post_id FK
-        uuid user_id FK
-        timestamp created_at
-        bigint version
-    }
-
-    post_comments {
-        uuid id PK
-        uuid post_id FK
-        uuid author_id FK
-        text content
-        timestamp created_at
-        bigint version
-    }
-
-    stories {
-        uuid id PK
-        uuid author_id FK
-        varchar image_url
-        timestamp created_at
-        timestamp expires_at
-        bigint version
-    }
-
-    challenges {
-        uuid id PK
-        uuid challenger_id FK
-        uuid challenged_id FK
-        varchar exercise_name
-        varchar status
-        decimal challenger_weight
-        decimal challenged_weight
-        timestamp created_at
-        bigint version
-    }
-
-    user_follows {
-        uuid id PK
-        uuid follower_id FK
-        uuid following_id FK
-        timestamp created_at
-        bigint version
-    }
-
-    users ||--o{ posts : "es autor de"
-    users ||--o{ post_likes : "da like"
-    users ||--o{ post_comments : "comenta"
-    users ||--o{ stories : "publica"
-    users ||--o{ challenges : "retador (challenger)"
-    users ||--o{ challenges : "retado (challenged)"
-    users ||--o{ user_follows : "sigue a (follower)"
-    users ||--o{ user_follows : "es seguido por (following)"
-    posts ||--o{ post_likes : "recibe likes"
-    posts ||--o{ post_comments : "tiene comentarios"
+    users ||--o{ posts : "author_id"
+    users ||--o{ post_likes : "user_id"
+    users ||--o{ post_comments : "author_id"
+    users ||--o{ stories : "author_id"
+    users ||--o{ challenges : "challenger_id"
+    users ||--o{ challenges : "challenged_id"
+    users ||--o{ user_follows : "follower_id"
+    users ||--o{ user_follows : "following_id"
+    posts ||--o{ post_likes : "post_id"
+    posts ||--o{ post_comments : "post_id"
 ```
 
-### 2.2 Fitness (Routines, Exercises, Profiles, Progress, Records)
+### 2.2 Fitness
 
 ```mermaid
 erDiagram
-    users {
-        uuid id PK
-        varchar username
-    }
-
-    routine {
-        bigint id PK
-        uuid user_id FK
-        varchar name
-        varchar description
-        varchar target_goal
-        boolean is_completed
-        timestamp completed_at
-        bigint version
-    }
-
-    exercise {
-        bigint id PK
-        bigint routine_id FK
-        varchar name
-        varchar description
-        integer sets
-        integer reps
-        integer duration_seconds
-        boolean is_completed
-        bigint version
-    }
-
-    catalog_exercise {
-        bigint id PK
-        varchar name
-        varchar description
-        varchar benefits
-        varchar video_url
-        bigint version
-    }
-
-    fitness_profiles {
-        uuid id PK
-        uuid user_id FK
-        decimal weight
-        integer height
-        date date_of_birth
-        varchar gender
-        varchar goal
-        decimal body_fat
-        decimal muscle_mass
-        timestamp updated_at
-        bigint version
-    }
-
-    fitness_progress_logs {
-        uuid id PK
-        uuid user_id FK
-        decimal weight
-        decimal body_fat
-        decimal muscle_mass
-        timestamp logged_at
-        bigint version
-    }
-
-    user_exercise_records {
-        uuid id PK
-        uuid user_id FK
-        varchar exercise_name
-        decimal max_weight
-        timestamp updated_at
-        bigint version
-    }
-
-    users ||--o{ routine : "crea"
-    routine ||--o{ exercise : "contiene"
-    users ||--|| fitness_profiles : "tiene perfil"
-    users ||--o{ fitness_progress_logs : "registra progreso"
-    users ||--o{ user_exercise_records : "guarda records"
-    catalog_exercise ||--o{ "" : "independiente"
+    users ||--o{ routine : "user_id"
+    users ||--o{ fitness_profiles : "user_id"
+    users ||--o{ fitness_progress_logs : "user_id"
+    users ||--o{ user_exercise_records : "user_id"
+    routine ||--o{ exercise : "routine_id"
 ```
 
-### 2.3 Nutrición (Meal Logs, Water, Recipes, Goals, Foods)
+### 2.3 Nutrición
 
 ```mermaid
 erDiagram
-    users {
-        uuid id PK
-        varchar username
-    }
-
-    nutrition_meal_logs {
-        uuid id PK
-        uuid user_id FK
-        varchar external_food_id
-        varchar food_name
-        varchar food_source
-        varchar meal_type
-        decimal quantity_grams
-        decimal calories
-        decimal protein
-        decimal carbs
-        decimal fats
-        timestamp logged_at
-        bigint version
-    }
-
-    water_logs {
-        uuid id PK
-        uuid user_id FK
-        decimal amount_ml
-        timestamp logged_at
-        bigint version
-    }
-
-    nutrition_goals {
-        uuid id PK
-        uuid user_id FK
-        decimal calories_target
-        decimal protein_target
-        decimal carbs_target
-        decimal fats_target
-        timestamp updated_at
-        bigint version
-    }
-
-    recipes {
-        uuid id PK
-        uuid user_id FK
-        varchar name
-        integer servings
-        timestamp created_at
-        timestamp updated_at
-        bigint version
-    }
-
-    recipe_ingredients {
-        uuid id PK
-        uuid recipe_id FK
-        varchar food_name
-        decimal quantity_grams
-        decimal calories_per_100g
-        decimal protein_per_100g
-        decimal carbs_per_100g
-        decimal fats_per_100g
-        bigint version
-    }
-
-    catalog_foods {
-        uuid id PK
-        uuid owner_user_id FK
-        varchar external_food_id
-        varchar barcode
-        varchar name
-        varchar brand
-        varchar source
-        decimal calories_per_100g
-        decimal protein_per_100g
-        decimal carbs_per_100g
-        decimal fats_per_100g
-        timestamp created_at
-        timestamp updated_at
-        bigint version
-    }
-
-    users ||--o{ nutrition_meal_logs : "registra comida"
-    users ||--o{ water_logs : "registra agua"
-    users ||--|| nutrition_goals : "tiene objetivos"
-    users ||--o{ recipes : "crea recetas"
-    users ||--o{ catalog_foods : "posee alimentos"
-    recipes ||--o{ recipe_ingredients : "contiene ingredientes"
+    users ||--o{ nutrition_meal_logs : "user_id"
+    users ||--o{ water_logs : "user_id"
+    users ||--o{ nutrition_goals : "user_id"
+    users ||--o{ recipes : "user_id"
+    users ||--o{ catalog_foods : "owner_user_id"
+    recipes ||--o{ recipe_ingredients : "recipe_id"
 ```
 
 ### 2.4 Sesiones
 
 ```mermaid
 erDiagram
-    users {
-        uuid id PK
-        varchar username
-        varchar email
-    }
-
-    user_sessions {
-        uuid id PK
-        uuid user_id FK
-        varchar session_id UK
-        timestamp created_at
-        timestamp expires_at
-        varchar device_info
-        boolean is_active
-        bigint version
-    }
-
-    users ||--o{ user_sessions : "tiene sesiones"
+    users ||--o{ user_sessions : "user_id"
 ```
 
 ---
@@ -366,7 +127,7 @@ erDiagram
 | `created_at` | TIMESTAMP | NOT NULL | |
 | `version` | BIGINT | NOT NULL, DEFAULT 0 | |
 
-UK: `(post_id, user_id)`
+**UK:** `(post_id, user_id)`
 
 ### 3.4 `post_comments`
 | Columna | Tipo | Restricciones | FK |
@@ -449,7 +210,7 @@ UK: `(post_id, user_id)`
 | `updated_at` | TIMESTAMP | NOT NULL | |
 | `version` | BIGINT | NOT NULL, DEFAULT 0 | |
 
-UK: `(user_id, exercise_name)`
+**UK:** `(user_id, exercise_name)`
 
 ### 3.11 `nutrition_meal_logs`
 | Columna | Tipo | Restricciones | FK |
@@ -517,7 +278,7 @@ UK: `(user_id, exercise_name)`
 | Columna | Tipo | Restricciones | FK |
 |---------|------|--------------|-----|
 | `id` | UUID | PK | |
-| `owner_user_id` | UUID | | → users(id) |
+| `owner_user_id` | UUID | | → users(id) (nullable) |
 | `external_food_id` | VARCHAR(255) | | |
 | `barcode` | VARCHAR(255) | | |
 | `name` | VARCHAR(255) | NOT NULL | |
@@ -553,7 +314,7 @@ UK: `(user_id, exercise_name)`
 | `created_at` | TIMESTAMP | NOT NULL | |
 | `version` | BIGINT | NOT NULL, DEFAULT 0 | |
 
-UK: `(follower_id, following_id)`
+**UK:** `(follower_id, following_id)`
 
 ### 3.19 `stories`
 | Columna | Tipo | Restricciones | FK |
@@ -581,8 +342,8 @@ UK: `(follower_id, following_id)`
 
 ## 4. Enumeraciones
 
-| Enum | Valores | Uso |
-|------|---------|-----|
+| Enum | Valores | Columna |
+|------|---------|---------|
 | `Gender` | `MALE`, `FEMALE`, `OTHER` | fitness_profiles.gender |
 | `FitnessGoal` | `LOSE_WEIGHT`, `GAIN_MUSCLE`, `MAINTAIN`, `IMPROVE_ENDURANCE`, `GENERAL_FITNESS` | fitness_profiles.goal |
 | `MealType` | `BREAKFAST`, `LUNCH`, `DINNER`, `SNACK` | nutrition_meal_logs.meal_type |
