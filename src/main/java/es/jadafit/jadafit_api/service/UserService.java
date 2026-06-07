@@ -15,6 +15,7 @@ import es.jadafit.jadafit_api.repository.UserSessionRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class UserService {
 
     private static final int MAX_SESSIONS_PER_USER = 10;
@@ -64,6 +66,7 @@ public class UserService {
                 .email(email)
                 .passwordHash(passwordEncoder.encode(dto.password()))
                 .build();
+        if (user.getVersion() == null) user.setVersion(0L);
 
         try {
             return userRepository.save(user);
@@ -72,6 +75,7 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
     public User loginUser(LoginDTO loginDto) {
         User user = findByLoginIdentifier(loginDto.identifier())
                 .orElseThrow(() -> new UnauthorizedException("Credenciales incorrectas"));
@@ -122,10 +126,10 @@ public class UserService {
 
         long activeSessions = sessionRepository.countByUserIdAndIsActiveTrue(userId);
         if (activeSessions >= MAX_SESSIONS_PER_USER) {
-            List<UserSession> oldest = sessionRepository.findByUserIdAndIsActiveTrue(userId);
-            oldest.sort((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()));
-            oldest.get(0).setIsActive(false);
-            sessionRepository.save(oldest.get(0));
+            List<UUID> ids = sessionRepository.findActiveSessionIdsByUserIdOrderByCreatedAtAsc(userId);
+            if (!ids.isEmpty()) {
+                sessionRepository.deactivateById(ids.get(0));
+            }
         }
 
         String sessionId = UUID.randomUUID().toString();
@@ -147,26 +151,18 @@ public class UserService {
         if (session.isEmpty()) return false;
         if (!session.get().getUser().getId().toString().equals(userId)) return false;
         if (session.get().getExpiresAt().isBefore(LocalDateTime.now())) {
-            session.get().setIsActive(false);
-            sessionRepository.save(session.get());
+            sessionRepository.deactivateById(session.get().getId());
             return false;
         }
         return true;
     }
 
     public void revokeSession(String sessionId) {
-        sessionRepository.findBySessionIdAndIsActiveTrue(sessionId).ifPresent(session -> {
-            session.setIsActive(false);
-            sessionRepository.save(session);
-        });
+        sessionRepository.deactivateBySessionId(sessionId);
     }
 
     public void revokeAllSessions(UUID userId) {
-        List<UserSession> active = sessionRepository.findByUserIdAndIsActiveTrue(userId);
-        for (UserSession s : active) {
-            s.setIsActive(false);
-        }
-        sessionRepository.saveAll(active);
+        sessionRepository.deactivateAllByUserId(userId);
     }
 
     public User updateProfile(UUID userId, es.jadafit.jadafit_api.dto.ProfileUpdateDTO dto) {

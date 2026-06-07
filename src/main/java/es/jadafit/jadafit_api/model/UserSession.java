@@ -44,6 +44,10 @@ public class UserSession {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Version
+    @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    private Long version = 0L;
+
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
@@ -52,8 +56,8 @@ public class UserSession {
         if (expiresAt == null) {
             expiresAt = LocalDateTime.now().plusDays(30);
         }
+        if (version == null) {
+            version = 0L;
+        }
     }
-
-    @Version
-    private Long version;
 }

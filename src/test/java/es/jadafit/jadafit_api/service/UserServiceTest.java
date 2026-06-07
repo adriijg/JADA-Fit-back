@@ -26,11 +26,13 @@ class UserServiceTest {
     private final UserSessionRepository sessionRepository = mock(UserSessionRepository.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final EmailService emailService = mock(EmailService.class);
+    private final FileUploadService fileUploadService = mock(FileUploadService.class);
     private final UserService userService = new UserService(
             userRepository,
             sessionRepository,
             passwordEncoder,
-            emailService
+            emailService,
+            fileUploadService
     );
 
     @Test
