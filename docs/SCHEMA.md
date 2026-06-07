@@ -2,11 +2,12 @@
 
 ## Leyenda
 
-| Símbolo | Significado |
-|---------|-------------|
-| `||--o{` | One (FK owner) a Many (inverse) |
-| `||--||` | One a One |
-| `}o--o{` | Many a Many (no existe aquí) |
+<table>
+<tr><th>Símbolo</th><th>Significado</th></tr>
+<tr><td><code>||--o{</code></td><td>One (FK owner) a Many (inverse)</td></tr>
+<tr><td><code>||--||</code></td><td>One a One</td></tr>
+<tr><td><code>}o--o{</code></td><td>Many a Many (no existe aquí)</td></tr>
+</table>
 
 ---
 
