@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "recipes")
+@Table(name = "recipes", indexes = {
+        @Index(name = "idx_recipes_user_id", columnList = "user_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,7 +21,6 @@ import java.util.UUID;
 public class Recipe {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
@@ -45,8 +46,21 @@ public class Recipe {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @Version
+    private Long version;
 }

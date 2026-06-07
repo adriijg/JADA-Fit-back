@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "stories")
+@Table(name = "stories", indexes = {
+        @Index(name = "idx_stories_author_id", columnList = "author_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,11 +19,10 @@ import java.util.UUID;
 public class Story {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
@@ -35,4 +36,17 @@ public class Story {
     @Builder.Default
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (expiresAt == null) {
+            expiresAt = LocalDateTime.now().plusHours(24);
+        }
+    }
+
+    @Version
+    private Long version;
 }

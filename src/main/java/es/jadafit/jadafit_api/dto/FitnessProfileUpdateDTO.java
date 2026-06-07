@@ -1,5 +1,6 @@
 package es.jadafit.jadafit_api.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import es.jadafit.jadafit_api.model.FitnessGoal;
 import es.jadafit.jadafit_api.model.Gender;
 import jakarta.validation.constraints.DecimalMin;
@@ -7,6 +8,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public record FitnessProfileUpdateDTO(
         @DecimalMin(value = "1.0", message = "El peso debe ser mayor que 0")
@@ -16,9 +18,8 @@ public record FitnessProfileUpdateDTO(
         @Max(value = 250, message = "La altura máxima es 250 cm")
         Integer height,
 
-        @Min(value = 10, message = "La edad mínima es 10 años")
-        @Max(value = 120, message = "La edad máxima es 120 años")
-        Integer age,
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        LocalDate dateOfBirth,
 
         Gender gender,
 

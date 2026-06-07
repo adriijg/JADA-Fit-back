@@ -18,7 +18,6 @@ import java.util.UUID;
 public class NutritionGoal {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
@@ -42,8 +41,18 @@ public class NutritionGoal {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @PrePersist
+    public void prePersist() {
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @Version
+    private Long version;
 }

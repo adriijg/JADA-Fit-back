@@ -5,7 +5,9 @@ import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.UUID;
 
 @Entity
@@ -18,7 +20,6 @@ import java.util.UUID;
 public class FitnessProfile {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
@@ -32,8 +33,8 @@ public class FitnessProfile {
     @Column
     private Integer height;
 
-    @Column
-    private Integer age;
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
     @Column
@@ -53,8 +54,24 @@ public class FitnessProfile {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @PrePersist
+    public void prePersist() {
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    @Version
+    private Long version;
+
+    @Transient
+    public Integer getAge() {
+        if (dateOfBirth == null) return null;
+        return Period.between(dateOfBirth, LocalDate.now()).getYears();
     }
 }

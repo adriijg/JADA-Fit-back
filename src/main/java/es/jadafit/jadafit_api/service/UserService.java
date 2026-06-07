@@ -31,17 +31,20 @@ public class UserService {
     private final UserSessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final FileUploadService fileUploadService;
 
     public UserService(
             UserRepository userRepository,
             UserSessionRepository sessionRepository,
             PasswordEncoder passwordEncoder,
-            EmailService emailService
+            EmailService emailService,
+            FileUploadService fileUploadService
     ) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.fileUploadService = fileUploadService;
     }
 
     public User registerUser(UserRegistrationDTO dto) {
@@ -115,7 +118,7 @@ public class UserService {
     }
 
     public String createSession(UUID userId, String deviceInfo) {
-        getUserById(userId);
+        User user = getUserById(userId);
 
         long activeSessions = sessionRepository.countByUserIdAndIsActiveTrue(userId);
         if (activeSessions >= MAX_SESSIONS_PER_USER) {
@@ -127,7 +130,7 @@ public class UserService {
 
         String sessionId = UUID.randomUUID().toString();
         UserSession session = UserSession.builder()
-                .userId(userId)
+                .user(user)
                 .sessionId(sessionId)
                 .deviceInfo(deviceInfo)
                 .createdAt(LocalDateTime.now())
@@ -142,7 +145,7 @@ public class UserService {
         if (sessionId == null) return false;
         Optional<UserSession> session = sessionRepository.findBySessionIdAndIsActiveTrue(sessionId);
         if (session.isEmpty()) return false;
-        if (!session.get().getUserId().toString().equals(userId)) return false;
+        if (!session.get().getUser().getId().toString().equals(userId)) return false;
         if (session.get().getExpiresAt().isBefore(LocalDateTime.now())) {
             session.get().setIsActive(false);
             sessionRepository.save(session.get());
@@ -172,6 +175,7 @@ public class UserService {
             user.setBio(dto.bio());
         }
         if (dto.profilePictureUrl() != null) {
+            fileUploadService.deleteImage(user.getProfilePictureUrl());
             user.setProfilePictureUrl(dto.profilePictureUrl());
         }
         return userRepository.save(user);

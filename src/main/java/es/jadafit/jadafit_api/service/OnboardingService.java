@@ -48,7 +48,7 @@ public class OnboardingService {
 
         profile.setWeight(dto.weight());
         profile.setHeight(dto.height());
-        profile.setAge(dto.age());
+        profile.setDateOfBirth(dto.dateOfBirth());
         profile.setGender(dto.gender());
         profile.setGoal(dto.goal());
         profile.setBodyFat(dto.bodyFat());
@@ -70,6 +70,7 @@ public class OnboardingService {
                 user.getEmail(),
                 savedProfile.getWeight(),
                 savedProfile.getHeight(),
+                savedProfile.getDateOfBirth(),
                 savedProfile.getAge(),
                 savedProfile.getGender(),
                 savedProfile.getGoal(),

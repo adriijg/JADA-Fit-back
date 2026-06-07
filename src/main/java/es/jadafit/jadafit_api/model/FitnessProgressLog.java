@@ -9,7 +9,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "fitness_progress_logs")
+@Table(name = "fitness_progress_logs", indexes = {
+        @Index(name = "idx_fitness_progress_logs_user_id", columnList = "user_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,7 +20,6 @@ import java.util.UUID;
 public class FitnessProgressLog {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
@@ -38,4 +39,14 @@ public class FitnessProgressLog {
     @Builder.Default
     @Column(name = "logged_at", nullable = false)
     private LocalDateTime loggedAt = LocalDateTime.now();
+
+    @PrePersist
+    public void prePersist() {
+        if (loggedAt == null) {
+            loggedAt = LocalDateTime.now();
+        }
+    }
+
+    @Version
+    private Long version;
 }

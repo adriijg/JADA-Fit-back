@@ -10,6 +10,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "user_follows", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"follower_id", "following_id"})
+}, indexes = {
+        @Index(name = "idx_user_follows_following_id", columnList = "following_id")
 })
 @Getter
 @Setter
@@ -19,19 +21,21 @@ import java.util.UUID;
 public class UserFollow {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "follower_id", nullable = false)
     private User follower;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "following_id", nullable = false)
     private User following;
 
     @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Version
+    private Long version;
 }

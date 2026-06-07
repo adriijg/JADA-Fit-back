@@ -1,5 +1,6 @@
 package es.jadafit.jadafit_api.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import es.jadafit.jadafit_api.model.FitnessGoal;
 import es.jadafit.jadafit_api.model.Gender;
 import jakarta.validation.constraints.DecimalMin;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public record OnboardingRequestDTO(
         @NotNull(message = "El peso es obligatorio")
@@ -19,10 +21,9 @@ public record OnboardingRequestDTO(
         @Max(value = 250, message = "La altura máxima es 250 cm")
         Integer height,
 
-        @NotNull(message = "La edad es obligatoria")
-        @Min(value = 10, message = "La edad mínima es 10 años")
-        @Max(value = 120, message = "La edad máxima es 120 años")
-        Integer age,
+        @NotNull(message = "La fecha de nacimiento es obligatoria")
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        LocalDate dateOfBirth,
 
         @NotNull(message = "El género es obligatorio")
         Gender gender,

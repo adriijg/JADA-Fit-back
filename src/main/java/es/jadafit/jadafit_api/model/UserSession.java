@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_sessions")
+@Table(name = "user_sessions", indexes = {
+        @Index(name = "idx_user_sessions_user_id", columnList = "user_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,12 +19,12 @@ import java.util.UUID;
 public class UserSession {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "session_id", nullable = false, unique = true, length = 36)
     private String sessionId;
@@ -41,4 +43,17 @@ public class UserSession {
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (expiresAt == null) {
+            expiresAt = LocalDateTime.now().plusDays(30);
+        }
+    }
+
+    @Version
+    private Long version;
 }

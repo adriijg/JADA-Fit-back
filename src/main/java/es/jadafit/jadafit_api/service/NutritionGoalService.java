@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.UUID;
 
 @Service
@@ -103,8 +105,8 @@ public class NutritionGoalService {
             throw new NotFoundException("La altura es obligatoria para calcular objetivos nutricionales");
         }
 
-        if (profile.getAge() == null) {
-            throw new NotFoundException("La edad es obligatoria para calcular objetivos nutricionales");
+        if (profile.getDateOfBirth() == null) {
+            throw new NotFoundException("La fecha de nacimiento es obligatoria para calcular objetivos nutricionales");
         }
 
         if (profile.getGender() == null) {
@@ -119,7 +121,11 @@ public class NutritionGoalService {
     private CalculatedNutritionGoal calculateGoal(FitnessProfile profile) {
         BigDecimal weight = profile.getWeight();
         BigDecimal height = BigDecimal.valueOf(profile.getHeight());
-        BigDecimal age = BigDecimal.valueOf(profile.getAge());
+        Integer ageInt = profile.getAge();
+        if (ageInt == null) {
+            throw new NotFoundException("No se puede calcular la edad a partir de la fecha de nacimiento");
+        }
+        BigDecimal age = BigDecimal.valueOf(ageInt);
 
         BigDecimal bmr = calculateBmr(
                 weight,

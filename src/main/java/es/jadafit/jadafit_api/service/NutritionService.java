@@ -6,6 +6,7 @@ import es.jadafit.jadafit_api.dto.NutritionMealCreateDTO;
 import es.jadafit.jadafit_api.dto.NutritionMealResponseDTO;
 import es.jadafit.jadafit_api.dto.RecentFoodResponseDTO;
 import es.jadafit.jadafit_api.exception.NotFoundException;
+import es.jadafit.jadafit_api.model.FoodSource;
 import es.jadafit.jadafit_api.model.NutritionMealLog;
 import es.jadafit.jadafit_api.model.Recipe;
 import es.jadafit.jadafit_api.model.RecipeIngredient;
@@ -56,7 +57,7 @@ public class NutritionService {
                 .user(user)
                 .externalFoodId(normalizeText(dto.externalFoodId()))
                 .foodName(normalizeText(dto.foodName()))
-                .foodSource(dto.foodSource())
+                .foodSource(parseFoodSource(dto.foodSource()))
                 .mealType(dto.mealType())
                 .quantityGrams(dto.quantityGrams())
                 .calories(calculateForQuantity(dto.caloriesPer100g(), dto.quantityGrams()))
@@ -137,6 +138,7 @@ public class NutritionService {
                     ? log.getFats().multiply(ONE_HUNDRED).divide(qty, 2, RoundingMode.HALF_UP)
                     : BigDecimal.ZERO;
 
+            String foodSourceStr = log.getFoodSource() != null ? log.getFoodSource().name() : null;
             return new RecentFoodResponseDTO(
                     log.getId(),
                     log.getFoodName(),
@@ -145,7 +147,7 @@ public class NutritionService {
                     carbsPer100g,
                     fatsPer100g,
                     log.getLoggedAt(),
-                    log.getFoodSource()
+                    foodSourceStr
             );
         }).toList();
     }
@@ -221,6 +223,15 @@ public class NutritionService {
                 mealLog.getFats(),
                 mealLog.getLoggedAt()
         );
+    }
+
+    private FoodSource parseFoodSource(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        try {
+            return FoodSource.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private String normalizeText(String value) {
