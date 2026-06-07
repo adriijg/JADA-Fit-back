@@ -26,8 +26,8 @@ erDiagram
     users  ||--o{ nutrition_meal_logs : "user_id"
     users  ||--o{ water_logs : "user_id"
     users  ||--o{ recipes : "user_id"
-    users  ||--o{ nutrition_goals : "user_id"
-    users  ||--o{ fitness_profiles : "user_id"
+    users  ||--|| nutrition_goals : "user_id"
+    users  ||--|| fitness_profiles : "user_id"
     users  ||--o{ fitness_progress_logs : "user_id"
     users  ||--o{ user_exercise_records : "user_id"
     users  ||--o{ user_sessions : "user_id"
@@ -63,7 +63,7 @@ erDiagram
 ```mermaid
 erDiagram
     users ||--o{ routine : "user_id"
-    users ||--o{ fitness_profiles : "user_id"
+    users ||--|| fitness_profiles : "user_id"
     users ||--o{ fitness_progress_logs : "user_id"
     users ||--o{ user_exercise_records : "user_id"
     routine ||--o{ exercise : "routine_id"
@@ -75,7 +75,7 @@ erDiagram
 erDiagram
     users ||--o{ nutrition_meal_logs : "user_id"
     users ||--o{ water_logs : "user_id"
-    users ||--o{ nutrition_goals : "user_id"
+    users ||--|| nutrition_goals : "user_id"
     users ||--o{ recipes : "user_id"
     users ||--o{ catalog_foods : "owner_user_id"
     recipes ||--o{ recipe_ingredients : "recipe_id"
