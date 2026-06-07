@@ -118,7 +118,7 @@ public class UserService {
     }
 
     public String createSession(UUID userId, String deviceInfo) {
-        getUserById(userId);
+        User user = getUserById(userId);
 
         long activeSessions = sessionRepository.countByUserIdAndIsActiveTrue(userId);
         if (activeSessions >= MAX_SESSIONS_PER_USER) {
@@ -130,7 +130,7 @@ public class UserService {
 
         String sessionId = UUID.randomUUID().toString();
         UserSession session = UserSession.builder()
-                .userId(userId)
+                .user(user)
                 .sessionId(sessionId)
                 .deviceInfo(deviceInfo)
                 .createdAt(LocalDateTime.now())
@@ -145,7 +145,7 @@ public class UserService {
         if (sessionId == null) return false;
         Optional<UserSession> session = sessionRepository.findBySessionIdAndIsActiveTrue(sessionId);
         if (session.isEmpty()) return false;
-        if (!session.get().getUserId().toString().equals(userId)) return false;
+        if (!session.get().getUser().getId().toString().equals(userId)) return false;
         if (session.get().getExpiresAt().isBefore(LocalDateTime.now())) {
             session.get().setIsActive(false);
             sessionRepository.save(session.get());

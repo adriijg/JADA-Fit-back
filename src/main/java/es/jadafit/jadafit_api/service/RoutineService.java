@@ -33,6 +33,11 @@ public class RoutineService {
         User userRef = new User();
         userRef.setId(userId);
         routine.setUser(userRef);
+        if (routine.getExercises() != null) {
+            for (Exercise exercise : routine.getExercises()) {
+                exercise.setRoutine(routine);
+            }
+        }
         return routineRepository.save(routine);
     }
 

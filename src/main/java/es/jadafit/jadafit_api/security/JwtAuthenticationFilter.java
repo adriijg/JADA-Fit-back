@@ -79,7 +79,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Optional<UserSession> session = sessionRepository.findBySessionIdAndIsActiveTrue(sessionId);
         if (session.isPresent()) {
             UserSession s = session.get();
-            if (!s.getUserId().toString().equals(userId)) return false;
+            if (!s.getUser().getId().toString().equals(userId)) return false;
             if (s.getExpiresAt().isBefore(LocalDateTime.now())) {
                 s.setIsActive(false);
                 sessionRepository.save(s);
@@ -91,19 +91,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             var userOpt = userRepository.findById(UUID.fromString(userId));
             if (userOpt.isPresent()) {
-                String oldSessionId = userOpt.get().getSessionId();
-                if (sessionId.equals(oldSessionId)) {
-                    System.err.println("[JWT] Migrating session to user_sessions table for user " + userId);
-                    UserSession migrated = UserSession.builder()
-                            .userId(UUID.fromString(userId))
-                            .sessionId(sessionId)
-                            .createdAt(LocalDateTime.now())
-                            .expiresAt(LocalDateTime.now().plusDays(30))
-                            .isActive(true)
-                            .build();
-                    sessionRepository.save(migrated);
-                    return true;
-                }
+                System.err.println("[JWT] No active session found for user " + userId);
             }
         } catch (Exception e) {
             System.err.println("[JWT] Fallback check failed: " + e.getMessage());

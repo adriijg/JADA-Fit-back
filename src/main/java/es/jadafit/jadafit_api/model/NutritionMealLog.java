@@ -9,7 +9,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "nutrition_meal_logs")
+@Table(name = "nutrition_meal_logs", indexes = {
+        @Index(name = "idx_nutrition_meal_logs_user_id", columnList = "user_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,7 +20,6 @@ import java.util.UUID;
 public class NutritionMealLog {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
@@ -32,8 +33,9 @@ public class NutritionMealLog {
     @Column(name = "food_name", nullable = false)
     private String foodName;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "food_source")
-    private String foodSource;
+    private FoodSource foodSource;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "meal_type", nullable = false)
@@ -57,4 +59,14 @@ public class NutritionMealLog {
     @Builder.Default
     @Column(name = "logged_at", nullable = false)
     private LocalDateTime loggedAt = LocalDateTime.now();
+
+    @PrePersist
+    public void prePersist() {
+        if (loggedAt == null) {
+            loggedAt = LocalDateTime.now();
+        }
+    }
+
+    @Version
+    private Long version;
 }

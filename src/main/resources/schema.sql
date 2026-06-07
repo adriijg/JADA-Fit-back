@@ -1,13 +1,38 @@
-ALTER TABLE routine ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id);
-ALTER TABLE routine ADD COLUMN IF NOT EXISTS is_completed BOOLEAN DEFAULT FALSE;
-ALTER TABLE routine ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+-- ============================================
+-- Migration: JPA entity fixes
+-- Solo lo que ddl-auto=update NO puede hacer:
+--   • renombrar columnas
+--   • dropear columnas
+--   • migrar datos
+--   • FK constraints en columnas existentes
+-- ============================================
 
-CREATE TABLE IF NOT EXISTS user_sessions (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id),
-    session_id VARCHAR(36) NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    expires_at TIMESTAMP NOT NULL DEFAULT NOW() + INTERVAL '30 days',
-    device_info VARCHAR(255),
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
-);
+-- 1. fitness_profiles: age → date_of_birth
+ALTER TABLE fitness_profiles ADD COLUMN IF NOT EXISTS date_of_birth DATE;
+UPDATE fitness_profiles
+SET date_of_birth = CURRENT_DATE - (age || ' years')::INTERVAL
+WHERE age IS NOT NULL AND date_of_birth IS NULL;
+ALTER TABLE fitness_profiles DROP COLUMN IF EXISTS age;
+
+-- 2. users: session_id ya está en user_sessions
+ALTER TABLE users DROP COLUMN IF EXISTS session_id;
+
+-- 3. FK en user_sessions.user_id (antes era UUID suelto)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_user_sessions_user'
+          AND table_name = 'user_sessions'
+    ) THEN
+        ALTER TABLE user_sessions
+        ADD CONSTRAINT fk_user_sessions_user
+        FOREIGN KEY (user_id) REFERENCES users(id);
+    END IF;
+END $$;
+
+-- 4. Normalizar food_source a mayúsculas (FoodSource enum)
+UPDATE nutrition_meal_logs
+SET food_source = UPPER(TRIM(food_source))
+WHERE food_source IS NOT NULL
+  AND food_source != UPPER(TRIM(food_source));

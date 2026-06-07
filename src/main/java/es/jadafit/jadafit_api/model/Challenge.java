@@ -9,7 +9,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "challenges")
+@Table(name = "challenges", indexes = {
+        @Index(name = "idx_challenges_challenger_id", columnList = "challenger_id"),
+        @Index(name = "idx_challenges_challenged_id", columnList = "challenged_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,15 +21,14 @@ import java.util.UUID;
 public class Challenge {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "challenger_id", nullable = false)
     private User challenger;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "challenged_id", nullable = false)
     private User challenged;
 
@@ -37,13 +39,23 @@ public class Challenge {
     @Column(nullable = false)
     private ChallengeStatus status;
 
-    @Column(name = "challenger_weight")
+    @Column(name = "challenger_weight", precision = 8, scale = 3)
     private BigDecimal challengerWeight;
 
-    @Column(name = "challenged_weight")
+    @Column(name = "challenged_weight", precision = 8, scale = 3)
     private BigDecimal challengedWeight;
 
     @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
+    @Version
+    private Long version;
 }

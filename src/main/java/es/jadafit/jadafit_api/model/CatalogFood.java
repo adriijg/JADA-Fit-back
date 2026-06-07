@@ -25,7 +25,6 @@ import java.util.UUID;
 public class CatalogFood {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
@@ -69,8 +68,21 @@ public class CatalogFood {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @Version
+    private Long version;
 }

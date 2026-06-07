@@ -51,7 +51,7 @@ public class FitnessProfileService {
 
         profile.setWeight(dto.weight());
         profile.setHeight(dto.height());
-        profile.setAge(dto.age());
+        profile.setDateOfBirth(dto.dateOfBirth());
         profile.setGender(dto.gender());
         profile.setGoal(dto.goal());
         profile.setBodyFat(dto.bodyFat());
@@ -77,6 +77,7 @@ public class FitnessProfileService {
                 user.getEmail(),
                 profile.getWeight(),
                 profile.getHeight(),
+                profile.getDateOfBirth(),
                 profile.getAge(),
                 profile.getGender(),
                 profile.getGoal(),
@@ -91,6 +92,7 @@ public class FitnessProfileService {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
+                null,
                 null,
                 null,
                 null,

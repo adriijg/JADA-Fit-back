@@ -8,7 +8,9 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "recipe_ingredients")
+@Table(name = "recipe_ingredients", indexes = {
+        @Index(name = "idx_recipe_ingredients_recipe_id", columnList = "recipe_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,7 +19,6 @@ import java.util.UUID;
 public class RecipeIngredient {
 
     @Id
-    @GeneratedValue
     @UuidGenerator
     private UUID id;
 
@@ -42,4 +43,7 @@ public class RecipeIngredient {
 
     @Column(name = "fats_per_100g", nullable = false)
     private BigDecimal fatsPer100g;
+
+    @Version
+    private Long version;
 }
