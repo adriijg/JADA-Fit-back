@@ -47,9 +47,13 @@ public class User {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @PrePersist
+    @PreUpdate
     public void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (version == null) {
+            version = 0L;
         }
     }
 
@@ -64,7 +68,8 @@ public class User {
     private LocalDateTime passwordResetTokenExpiry;
 
     @Version
-    private Long version;
+    @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    private Long version = 0L;
 
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore

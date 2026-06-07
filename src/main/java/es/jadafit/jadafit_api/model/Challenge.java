@@ -49,10 +49,17 @@ public class Challenge {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Builder.Default
+    @Column(name = "expires_at", nullable = false)
+    private LocalDateTime expiresAt = LocalDateTime.now().plusDays(7);
+
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (expiresAt == null) {
+            expiresAt = createdAt.plusDays(7);
         }
     }
 

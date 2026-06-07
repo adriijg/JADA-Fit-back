@@ -11,6 +11,8 @@ import es.jadafit.jadafit_api.repository.ChallengeRepository;
 import es.jadafit.jadafit_api.repository.UserExerciseRecordRepository;
 import es.jadafit.jadafit_api.repository.UserFollowRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChallengeService {
 
     private final ChallengeRepository challengeRepository;
@@ -142,6 +145,21 @@ public class ChallengeService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    @Scheduled(fixedRate = 3600000) // Every hour
+    public void autoExpireChallenges() {
+        List<Challenge> expired = challengeRepository.findByStatusInAndExpiresAtBefore(
+                List.of(ChallengeStatus.PENDING, ChallengeStatus.ACCEPTED),
+                LocalDateTime.now()
+        );
+
+        if (!expired.isEmpty()) {
+            expired.forEach(c -> c.setStatus(ChallengeStatus.EXPIRED));
+            challengeRepository.saveAll(expired);
+            log.info("Auto-expired {} challenges", expired.size());
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<UserExerciseRecord> getMyRecords(UUID userId) {
         User user = userService.getUserById(userId);
@@ -157,7 +175,8 @@ public class ChallengeService {
                 challenge.getStatus(),
                 challenge.getChallengerWeight(),
                 challenge.getChallengedWeight(),
-                challenge.getCreatedAt()
+                challenge.getCreatedAt(),
+                challenge.getExpiresAt()
         );
     }
 

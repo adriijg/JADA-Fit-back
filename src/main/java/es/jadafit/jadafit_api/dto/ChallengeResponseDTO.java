@@ -13,5 +13,6 @@ public record ChallengeResponseDTO(
     ChallengeStatus status,
     BigDecimal challengerWeight,
     BigDecimal challengedWeight,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    LocalDateTime expiresAt
 ) {}
