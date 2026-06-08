@@ -15,6 +15,7 @@ public record ChallengeResponseDTO(
     BigDecimal challengerWeight,
     BigDecimal challengedWeight,
     BigDecimal targetIncreaseKg,
+    BigDecimal targetWeightKg,
     double challengerProgressPercent,
     double challengedProgressPercent,
     UserSummaryDTO winner,

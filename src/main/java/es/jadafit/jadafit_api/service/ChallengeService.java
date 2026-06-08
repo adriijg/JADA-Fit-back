@@ -65,6 +65,8 @@ public class ChallengeService {
         BigDecimal challengedWeight = recordRepository.findByUserAndExerciseName(challenged, dto.exerciseName())
                 .map(UserExerciseRecord::getMaxWeight)
                 .orElse(BigDecimal.ZERO);
+        BigDecimal highestStartWeight = challengerWeight.max(challengedWeight);
+        BigDecimal targetWeight = getValidCreateTargetWeight(dto.targetWeightKg(), highestStartWeight);
 
         Challenge challenge = Challenge.builder()
                 .challenger(challenger)
@@ -76,6 +78,7 @@ public class ChallengeService {
                 .challengerStartWeight(challengerWeight)
                 .challengedStartWeight(challengedWeight)
                 .targetIncreaseKg(BigDecimal.TEN)
+                .targetWeightKg(targetWeight)
                 .build();
 
         return toResponseDTO(challengeRepository.save(challenge));
@@ -199,6 +202,7 @@ public class ChallengeService {
                 } else {
                     challenge.setChallengedWeight(newWeight);
                 }
+                updateWinnerIfCompleted(challenge);
                 normalizeVersion(challenge);
                 challengeRepository.save(challenge);
             }
@@ -217,10 +221,22 @@ public class ChallengeService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ChallengeResponseDTO> getMyChallenges(UUID userId) {
         User user = userService.getUserById(userId);
-        return challengeRepository.findAllByUser(user).stream()
+        List<Challenge> challenges = challengeRepository.findAllByUser(user);
+
+        for (Challenge challenge : challenges) {
+            if (challenge.getStatus() == ChallengeStatus.ACCEPTED && challenge.getWinner() == null) {
+                updateWinnerIfCompleted(challenge);
+                if (challenge.getWinner() != null) {
+                    normalizeVersion(challenge);
+                    challengeRepository.save(challenge);
+                }
+            }
+        }
+
+        return challenges.stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -264,8 +280,9 @@ public class ChallengeService {
                 challenge.getChallengerWeight(),
                 challenge.getChallengedWeight(),
                 getTargetIncrease(challenge),
-                calculateProgressPercent(challenge.getChallengerWeight(), getStartingWeight(challenge, challenge.getChallenger()), getTargetIncrease(challenge)),
-                calculateProgressPercent(challenge.getChallengedWeight(), getStartingWeight(challenge, challenge.getChallenged()), getTargetIncrease(challenge)),
+                getTargetWeight(challenge),
+                calculateProgressPercent(challenge.getChallengerWeight(), getStartingWeight(challenge, challenge.getChallenger()), getTargetWeight(challenge)),
+                calculateProgressPercent(challenge.getChallengedWeight(), getStartingWeight(challenge, challenge.getChallenged()), getTargetWeight(challenge)),
                 challenge.getWinner() != null ? toSummaryDTO(challenge.getWinner()) : null,
                 challenge.getCompletedAt(),
                 progressEntries,
@@ -294,6 +311,11 @@ public class ChallengeService {
         if (challenge.getTargetIncreaseKg() == null || challenge.getTargetIncreaseKg().compareTo(BigDecimal.ZERO) <= 0) {
             challenge.setTargetIncreaseKg(BigDecimal.TEN);
         }
+        if (challenge.getTargetWeightKg() == null || challenge.getTargetWeightKg().compareTo(BigDecimal.ZERO) <= 0) {
+            BigDecimal highestStartWeight = getStartingWeight(challenge, challenge.getChallenger())
+                    .max(getStartingWeight(challenge, challenge.getChallenged()));
+            challenge.setTargetWeightKg(highestStartWeight.add(getTargetIncrease(challenge)));
+        }
     }
 
     private ChallengeProgressEntryDTO toProgressDTO(ChallengeProgressEntry entry) {
@@ -316,6 +338,25 @@ public class ChallengeService {
                 : BigDecimal.TEN;
     }
 
+    private BigDecimal getTargetWeight(Challenge challenge) {
+        if (challenge.getTargetWeightKg() != null && challenge.getTargetWeightKg().compareTo(BigDecimal.ZERO) > 0) {
+            return challenge.getTargetWeightKg();
+        }
+        BigDecimal highestStartWeight = getStartingWeight(challenge, challenge.getChallenger())
+                .max(getStartingWeight(challenge, challenge.getChallenged()));
+        return highestStartWeight.add(getTargetIncrease(challenge));
+    }
+
+    private BigDecimal getValidCreateTargetWeight(BigDecimal requestedTargetWeight, BigDecimal highestStartWeight) {
+        if (requestedTargetWeight == null || requestedTargetWeight.compareTo(BigDecimal.ZERO) <= 0) {
+            return highestStartWeight.add(BigDecimal.TEN);
+        }
+        if (requestedTargetWeight.compareTo(highestStartWeight) <= 0) {
+            throw new ConflictException("La marca objetivo debe ser mayor que las marcas actuales de ambos usuarios");
+        }
+        return requestedTargetWeight;
+    }
+
     private BigDecimal getStartingWeight(Challenge challenge, User user) {
         if (challenge.getChallenger().getId().equals(user.getId())) {
             if (challenge.getChallengerStartWeight() != null) {
@@ -329,17 +370,18 @@ public class ChallengeService {
         return challenge.getChallengedWeight() != null ? challenge.getChallengedWeight() : BigDecimal.ZERO;
     }
 
-    private double calculateProgressPercent(BigDecimal currentWeight, BigDecimal startingWeight, BigDecimal targetIncrease) {
-        if (currentWeight == null || startingWeight == null || targetIncrease == null || targetIncrease.compareTo(BigDecimal.ZERO) <= 0) {
+    private double calculateProgressPercent(BigDecimal currentWeight, BigDecimal startingWeight, BigDecimal targetWeight) {
+        if (currentWeight == null || startingWeight == null || targetWeight == null || targetWeight.compareTo(startingWeight) <= 0) {
             return 0;
         }
         BigDecimal improvement = currentWeight.subtract(startingWeight);
         if (improvement.compareTo(BigDecimal.ZERO) <= 0) {
             return 0;
         }
+        BigDecimal requiredImprovement = targetWeight.subtract(startingWeight);
         BigDecimal percent = improvement
                 .multiply(BigDecimal.valueOf(100))
-                .divide(targetIncrease, 2, RoundingMode.HALF_UP);
+                .divide(requiredImprovement, 2, RoundingMode.HALF_UP);
         return Math.min(100, percent.doubleValue());
     }
 
@@ -348,7 +390,7 @@ public class ChallengeService {
             return;
         }
 
-        BigDecimal target = getTargetIncrease(challenge);
+        BigDecimal target = getTargetWeight(challenge);
         double challengerProgress = calculateProgressPercent(
                 challenge.getChallengerWeight(),
                 getStartingWeight(challenge, challenge.getChallenger()),

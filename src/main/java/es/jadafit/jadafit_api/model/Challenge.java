@@ -55,6 +55,9 @@ public class Challenge {
     @Column(name = "target_increase_kg", precision = 8, scale = 3)
     private BigDecimal targetIncreaseKg = BigDecimal.TEN;
 
+    @Column(name = "target_weight_kg", precision = 8, scale = 3)
+    private BigDecimal targetWeightKg;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "winner_id")
     private User winner;
@@ -80,6 +83,9 @@ public class Challenge {
         }
         if (targetIncreaseKg == null) {
             targetIncreaseKg = BigDecimal.TEN;
+        }
+        if (targetWeightKg == null) {
+            targetWeightKg = BigDecimal.ZERO;
         }
     }
 
