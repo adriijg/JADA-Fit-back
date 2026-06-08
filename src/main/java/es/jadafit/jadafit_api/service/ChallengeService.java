@@ -1,22 +1,28 @@
 package es.jadafit.jadafit_api.service;
 
 import es.jadafit.jadafit_api.dto.ChallengeCreateDTO;
+import es.jadafit.jadafit_api.dto.ChallengeProgressCreateDTO;
+import es.jadafit.jadafit_api.dto.ChallengeProgressEntryDTO;
 import es.jadafit.jadafit_api.dto.ChallengeResponseDTO;
 import es.jadafit.jadafit_api.dto.UserExerciseRecordDTO;
 import es.jadafit.jadafit_api.dto.UserSummaryDTO;
 import es.jadafit.jadafit_api.exception.ConflictException;
 import es.jadafit.jadafit_api.exception.NotFoundException;
 import es.jadafit.jadafit_api.model.*;
+import es.jadafit.jadafit_api.repository.ChallengeProgressEntryRepository;
 import es.jadafit.jadafit_api.repository.ChallengeRepository;
 import es.jadafit.jadafit_api.repository.UserExerciseRecordRepository;
 import es.jadafit.jadafit_api.repository.UserFollowRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -28,9 +34,11 @@ import java.util.stream.Collectors;
 public class ChallengeService {
 
     private final ChallengeRepository challengeRepository;
+    private final ChallengeProgressEntryRepository progressEntryRepository;
     private final UserExerciseRecordRepository recordRepository;
     private final UserFollowRepository followRepository;
     private final UserService userService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
     public ChallengeResponseDTO createChallenge(UUID challengerId, ChallengeCreateDTO dto) {
@@ -65,6 +73,9 @@ public class ChallengeService {
                 .status(ChallengeStatus.PENDING)
                 .challengerWeight(challengerWeight)
                 .challengedWeight(challengedWeight)
+                .challengerStartWeight(challengerWeight)
+                .challengedStartWeight(challengedWeight)
+                .targetIncreaseKg(BigDecimal.TEN)
                 .build();
 
         return toResponseDTO(challengeRepository.save(challenge));
@@ -101,23 +112,79 @@ public class ChallengeService {
     }
 
     @Transactional
-    public void updateExerciseRecord(UUID userId, UserExerciseRecordDTO dto) {
+    public ChallengeResponseDTO addProgress(UUID userId, UUID challengeId, ChallengeProgressCreateDTO dto) {
+        Challenge challenge = challengeRepository.findById(challengeId)
+                .orElseThrow(() -> new NotFoundException("Desafío no encontrado"));
         User user = userService.getUserById(userId);
 
-        UserExerciseRecord record = recordRepository.findByUserAndExerciseName(user, dto.exerciseName())
+        if (!isParticipant(challenge, userId)) {
+            throw new ConflictException("No participas en este pique");
+        }
+
+        if (challenge.getStatus() != ChallengeStatus.ACCEPTED) {
+            throw new ConflictException("Solo puedes registrar avances en piques activos");
+        }
+
+        BigDecimal weight = dto.weight();
+        if (weight == null || weight.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ConflictException("El peso debe ser mayor que cero");
+        }
+
+        LocalDate entryDate = dto.entryDate() != null ? dto.entryDate() : LocalDate.now();
+        ChallengeProgressEntry entry = progressEntryRepository
+                .findByChallengeAndUserAndEntryDate(challenge, user, entryDate)
+                .orElseGet(() -> ChallengeProgressEntry.builder()
+                        .challenge(challenge)
+                        .user(user)
+                        .entryDate(entryDate)
+                        .build());
+
+        entry.setWeight(weight);
+        progressEntryRepository.save(entry);
+
+        if (challenge.getChallenger().getId().equals(userId)) {
+            if (challenge.getChallengerWeight() == null || weight.compareTo(challenge.getChallengerWeight()) > 0) {
+                challenge.setChallengerWeight(weight);
+            }
+        } else if (challenge.getChallengedWeight() == null || weight.compareTo(challenge.getChallengedWeight()) > 0) {
+            challenge.setChallengedWeight(weight);
+        }
+
+        updateExerciseRecordIfHigher(user, challenge.getExerciseName(), weight);
+        updateWinnerIfCompleted(challenge);
+
+        return toResponseDTO(challengeRepository.save(challenge));
+    }
+
+    @Transactional
+    public void updateExerciseRecord(UUID userId, UserExerciseRecordDTO dto) {
+        backfillNullVersionsForChallengeUpdate();
+        User user = userService.getUserById(userId);
+        updateExerciseRecordIfHigher(user, dto.exerciseName(), dto.maxWeight());
+    }
+
+    private void backfillNullVersionsForChallengeUpdate() {
+        jdbcTemplate.update("UPDATE users SET version = 0 WHERE version IS NULL");
+        jdbcTemplate.update("UPDATE user_exercise_records SET version = 0 WHERE version IS NULL");
+        jdbcTemplate.update("UPDATE challenges SET version = 0 WHERE version IS NULL");
+    }
+
+    private void updateExerciseRecordIfHigher(User user, String exerciseName, BigDecimal maxWeight) {
+        UserExerciseRecord record = recordRepository.findByUserAndExerciseName(user, exerciseName)
                 .orElseGet(() -> UserExerciseRecord.builder()
                         .user(user)
-                        .exerciseName(dto.exerciseName())
+                        .exerciseName(exerciseName)
                         .build());
 
         // Update record if the new weight is higher
-        if (record.getMaxWeight() == null || dto.maxWeight().compareTo(record.getMaxWeight()) > 0) {
-            record.setMaxWeight(dto.maxWeight());
+        if (record.getMaxWeight() == null || maxWeight.compareTo(record.getMaxWeight()) > 0) {
+            normalizeVersion(record);
+            record.setMaxWeight(maxWeight);
             record.setUpdatedAt(LocalDateTime.now());
             recordRepository.save(record);
 
             // Also update any active challenges involving this user and exercise
-            updateActiveChallenges(user, dto.exerciseName(), dto.maxWeight());
+            updateActiveChallenges(user, exerciseName, maxWeight);
         }
     }
 
@@ -132,8 +199,21 @@ public class ChallengeService {
                 } else {
                     challenge.setChallengedWeight(newWeight);
                 }
+                normalizeVersion(challenge);
                 challengeRepository.save(challenge);
             }
+        }
+    }
+
+    private void normalizeVersion(UserExerciseRecord record) {
+        if (record.getId() != null && record.getVersion() == null) {
+            record.setVersion(0L);
+        }
+    }
+
+    private void normalizeVersion(Challenge challenge) {
+        if (challenge.getId() != null && challenge.getVersion() == null) {
+            challenge.setVersion(0L);
         }
     }
 
@@ -167,6 +247,14 @@ public class ChallengeService {
     }
 
     private ChallengeResponseDTO toResponseDTO(Challenge challenge) {
+        normalizeChallengeDefaults(challenge);
+
+        List<ChallengeProgressEntryDTO> progressEntries = progressEntryRepository
+                .findByChallengeOrderByEntryDateAscCreatedAtAsc(challenge)
+                .stream()
+                .map(this::toProgressDTO)
+                .collect(Collectors.toList());
+
         return new ChallengeResponseDTO(
                 challenge.getId(),
                 toSummaryDTO(challenge.getChallenger()),
@@ -175,6 +263,12 @@ public class ChallengeService {
                 challenge.getStatus(),
                 challenge.getChallengerWeight(),
                 challenge.getChallengedWeight(),
+                getTargetIncrease(challenge),
+                calculateProgressPercent(challenge.getChallengerWeight(), getStartingWeight(challenge, challenge.getChallenger()), getTargetIncrease(challenge)),
+                calculateProgressPercent(challenge.getChallengedWeight(), getStartingWeight(challenge, challenge.getChallenged()), getTargetIncrease(challenge)),
+                challenge.getWinner() != null ? toSummaryDTO(challenge.getWinner()) : null,
+                challenge.getCompletedAt(),
+                progressEntries,
                 challenge.getCreatedAt(),
                 challenge.getExpiresAt()
         );
@@ -182,5 +276,99 @@ public class ChallengeService {
 
     private UserSummaryDTO toSummaryDTO(User user) {
         return new UserSummaryDTO(user.getId(), user.getUsername(), user.getProfilePictureUrl());
+    }
+
+    private void normalizeChallengeDefaults(Challenge challenge) {
+        if (challenge.getChallengerWeight() == null) {
+            challenge.setChallengerWeight(BigDecimal.ZERO);
+        }
+        if (challenge.getChallengedWeight() == null) {
+            challenge.setChallengedWeight(BigDecimal.ZERO);
+        }
+        if (challenge.getChallengerStartWeight() == null) {
+            challenge.setChallengerStartWeight(challenge.getChallengerWeight());
+        }
+        if (challenge.getChallengedStartWeight() == null) {
+            challenge.setChallengedStartWeight(challenge.getChallengedWeight());
+        }
+        if (challenge.getTargetIncreaseKg() == null || challenge.getTargetIncreaseKg().compareTo(BigDecimal.ZERO) <= 0) {
+            challenge.setTargetIncreaseKg(BigDecimal.TEN);
+        }
+    }
+
+    private ChallengeProgressEntryDTO toProgressDTO(ChallengeProgressEntry entry) {
+        return new ChallengeProgressEntryDTO(
+                entry.getId(),
+                toSummaryDTO(entry.getUser()),
+                entry.getEntryDate(),
+                entry.getWeight(),
+                entry.getCreatedAt()
+        );
+    }
+
+    private boolean isParticipant(Challenge challenge, UUID userId) {
+        return challenge.getChallenger().getId().equals(userId) || challenge.getChallenged().getId().equals(userId);
+    }
+
+    private BigDecimal getTargetIncrease(Challenge challenge) {
+        return challenge.getTargetIncreaseKg() != null && challenge.getTargetIncreaseKg().compareTo(BigDecimal.ZERO) > 0
+                ? challenge.getTargetIncreaseKg()
+                : BigDecimal.TEN;
+    }
+
+    private BigDecimal getStartingWeight(Challenge challenge, User user) {
+        if (challenge.getChallenger().getId().equals(user.getId())) {
+            if (challenge.getChallengerStartWeight() != null) {
+                return challenge.getChallengerStartWeight();
+            }
+            return challenge.getChallengerWeight() != null ? challenge.getChallengerWeight() : BigDecimal.ZERO;
+        }
+        if (challenge.getChallengedStartWeight() != null) {
+            return challenge.getChallengedStartWeight();
+        }
+        return challenge.getChallengedWeight() != null ? challenge.getChallengedWeight() : BigDecimal.ZERO;
+    }
+
+    private double calculateProgressPercent(BigDecimal currentWeight, BigDecimal startingWeight, BigDecimal targetIncrease) {
+        if (currentWeight == null || startingWeight == null || targetIncrease == null || targetIncrease.compareTo(BigDecimal.ZERO) <= 0) {
+            return 0;
+        }
+        BigDecimal improvement = currentWeight.subtract(startingWeight);
+        if (improvement.compareTo(BigDecimal.ZERO) <= 0) {
+            return 0;
+        }
+        BigDecimal percent = improvement
+                .multiply(BigDecimal.valueOf(100))
+                .divide(targetIncrease, 2, RoundingMode.HALF_UP);
+        return Math.min(100, percent.doubleValue());
+    }
+
+    private void updateWinnerIfCompleted(Challenge challenge) {
+        if (challenge.getWinner() != null) {
+            return;
+        }
+
+        BigDecimal target = getTargetIncrease(challenge);
+        double challengerProgress = calculateProgressPercent(
+                challenge.getChallengerWeight(),
+                getStartingWeight(challenge, challenge.getChallenger()),
+                target
+        );
+        double challengedProgress = calculateProgressPercent(
+                challenge.getChallengedWeight(),
+                getStartingWeight(challenge, challenge.getChallenged()),
+                target
+        );
+
+        if (challengerProgress >= 100) {
+            challenge.setWinner(challenge.getChallenger());
+        } else if (challengedProgress >= 100) {
+            challenge.setWinner(challenge.getChallenged());
+        }
+
+        if (challenge.getWinner() != null) {
+            challenge.setStatus(ChallengeStatus.FINISHED);
+            challenge.setCompletedAt(LocalDateTime.now());
+        }
     }
 }

@@ -1,6 +1,7 @@
 package es.jadafit.jadafit_api.controller;
 
 import es.jadafit.jadafit_api.dto.ChallengeCreateDTO;
+import es.jadafit.jadafit_api.dto.ChallengeProgressCreateDTO;
 import es.jadafit.jadafit_api.dto.ChallengeResponseDTO;
 import es.jadafit.jadafit_api.dto.UserExerciseRecordDTO;
 import es.jadafit.jadafit_api.exception.UnauthorizedException;
@@ -52,6 +53,16 @@ public class ChallengeController {
     public ResponseEntity<List<ChallengeResponseDTO>> getMyChallenges(Authentication authentication) {
         UUID currentUserId = getUserIdFromAuthentication(authentication);
         return ResponseEntity.ok(challengeService.getMyChallenges(currentUserId));
+    }
+
+    @PostMapping("/{id}/progress")
+    public ResponseEntity<ChallengeResponseDTO> addProgress(
+            Authentication authentication,
+            @PathVariable UUID id,
+            @RequestBody ChallengeProgressCreateDTO dto
+    ) {
+        UUID currentUserId = getUserIdFromAuthentication(authentication);
+        return ResponseEntity.ok(challengeService.addProgress(currentUserId, id, dto));
     }
 
     @PostMapping("/records")

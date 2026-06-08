@@ -5,5 +5,8 @@ public enum ChallengeStatus {
     ACCEPTED,
     REJECTED,
     FINISHED,
-    EXPIRED
+    EXPIRED,
+    COMPLETED,
+    DECLINED,
+    CANCELED
 }

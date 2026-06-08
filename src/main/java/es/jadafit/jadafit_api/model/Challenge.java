@@ -45,12 +45,29 @@ public class Challenge {
     @Column(name = "challenged_weight", precision = 8, scale = 3)
     private BigDecimal challengedWeight;
 
+    @Column(name = "challenger_start_weight", precision = 8, scale = 3)
+    private BigDecimal challengerStartWeight;
+
+    @Column(name = "challenged_start_weight", precision = 8, scale = 3)
+    private BigDecimal challengedStartWeight;
+
+    @Builder.Default
+    @Column(name = "target_increase_kg", precision = 8, scale = 3)
+    private BigDecimal targetIncreaseKg = BigDecimal.TEN;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "winner_id")
+    private User winner;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @Builder.Default
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Builder.Default
-    @Column(name = "expires_at", nullable = false)
+    @Column(name = "expires_at")
     private LocalDateTime expiresAt = LocalDateTime.now().plusDays(7);
 
     @PrePersist
@@ -60,6 +77,9 @@ public class Challenge {
         }
         if (expiresAt == null) {
             expiresAt = createdAt.plusDays(7);
+        }
+        if (targetIncreaseKg == null) {
+            targetIncreaseKg = BigDecimal.TEN;
         }
     }
 
