@@ -55,11 +55,12 @@ erDiagram
     users ||--o{ challenges : "challenged_id"
     users ||--o{ user_follows : "follower_id"
     users ||--o{ user_follows : "following_id"
+    users ||--o{ user_exercise_records : "user_id"
     posts ||--o{ post_likes : "post_id"
     posts ||--o{ post_comments : "post_id"
 ```
 
-### 2.2 Fitness
+### 2.2 Fitness y entrenamiento
 
 ```mermaid
 erDiagram
@@ -68,7 +69,10 @@ erDiagram
     users ||--o{ fitness_progress_logs : "user_id"
     users ||--o{ user_exercise_records : "user_id"
     routine ||--o{ exercise : "routine_id"
+    catalog_exercise
 ```
+
+> `catalog_exercise` no tiene FK a ninguna tabla; es un catálogo de referencia.
 
 ### 2.3 Nutrición
 
@@ -300,10 +304,11 @@ erDiagram
 | `challenger_id` | UUID | NOT NULL | → users(id) |
 | `challenged_id` | UUID | NOT NULL | → users(id) |
 | `exercise_name` | VARCHAR(255) | NOT NULL | |
-| `status` | VARCHAR(255) | NOT NULL | `PENDING`, `ACCEPTED`, `COMPLETED`, `DECLINED`, `CANCELED` |
+| `status` | VARCHAR(255) | NOT NULL | CHECK: `PENDING`, `ACCEPTED`, `REJECTED`, `FINISHED`, `EXPIRED` |
 | `challenger_weight` | NUMERIC(8,3) | | |
 | `challenged_weight` | NUMERIC(8,3) | | |
 | `created_at` | TIMESTAMP | NOT NULL | |
+| `expires_at` | TIMESTAMP | NOT NULL | DEFAULT: created_at + 7 days |
 | `version` | BIGINT | NOT NULL, DEFAULT 0 | |
 
 ### 3.18 `user_follows`
@@ -349,7 +354,7 @@ erDiagram
 | `FitnessGoal` | `LOSE_WEIGHT`, `GAIN_MUSCLE`, `MAINTAIN`, `IMPROVE_ENDURANCE`, `GENERAL_FITNESS` | fitness_profiles.goal |
 | `MealType` | `BREAKFAST`, `LUNCH`, `DINNER`, `SNACK` | nutrition_meal_logs.meal_type |
 | `FoodSource` | `USER`, `SYSTEM`, `BARCODE`, `OPEN_FOOD_FACTS` | nutrition_meal_logs.food_source, catalog_foods.source |
-| `ChallengeStatus` | `PENDING`, `ACCEPTED`, `COMPLETED`, `DECLINED`, `CANCELED` | challenges.status |
+| `ChallengeStatus` | `PENDING`, `ACCEPTED`, `REJECTED`, `FINISHED`, `EXPIRED` | challenges.status |
 
 ---
 
